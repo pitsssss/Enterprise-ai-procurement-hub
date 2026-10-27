@@ -3,13 +3,14 @@ import {
   FileText,
   ShoppingCart,
   TrendingUp,
+  LayoutDashboard,
   Award,
   Building2,
   Sparkles,
-  Bot,
   Plus,
   Search,
   X,
+  Bot,
 } from 'lucide-react';
 
 export type TabType = 'overview' | 'rfqs' | 'bids' | 'vendors' | 'pos';
@@ -170,78 +171,79 @@ export const Navigation: React.FC<NavigationProps> = ({
       </aside>
 
       {/* ========================================================= */}
-      {/* 2. MOBILE TOP HEADER (Visible on <md screens) */}
+      {/* 2. MOBILE TOP APP BAR (Visible on <= 767px screens) */}
       {/* ========================================================= */}
-      <header className="md:hidden sticky top-0 z-30 flex flex-col border-b border-slate-800 bg-slate-900/95 backdrop-blur-md">
-        <div className="flex h-14 items-center justify-between px-3">
-          <div className="flex items-center gap-2">
+      <header className="md:hidden sticky top-0 z-30 flex flex-col border-b border-slate-800/90 bg-slate-900/95 backdrop-blur-md">
+        <div className="flex h-14 items-center justify-between px-3.5 sm:px-4">
+          {/* Brand Identity */}
+          <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white shadow-md shadow-indigo-600/30">
               <Sparkles className="h-4 w-4 text-indigo-100" />
             </div>
-            <div>
-              <h1 className="text-xs font-bold tracking-wide text-white leading-none">Synthetix</h1>
-              <p className="text-[10px] font-medium text-indigo-400 leading-tight">Sourcing AI</p>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-sm font-bold tracking-tight text-white">Synthetix</span>
+              <span className="text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">AI</span>
             </div>
           </div>
 
+          {/* Quick Action Icons */}
           <div className="flex items-center gap-1.5">
-            {/* Search Toggle */}
+            {/* Search Button */}
             <button
               onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-              className={`p-2 rounded-lg border transition-colors ${
+              className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all ${
                 isMobileSearchOpen || searchQuery
-                  ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-300'
-                  : 'border-slate-800 bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                  ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-300 shadow-sm'
+                  : 'border-slate-800 bg-slate-850 text-slate-400 active:bg-slate-800'
               }`}
               aria-label="Toggle search"
             >
               <Search className="h-4 w-4" />
             </button>
 
-            {/* Quick Create RFQ Action */}
-            <button
-              onClick={onOpenCreateRfq}
-              className="flex items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-500 active:scale-95 transition-all"
-              aria-label="Create new requisition"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New RFQ</span>
-            </button>
-
-            {/* AI Copilot Mobile Trigger */}
+            {/* AI Copilot Quick Launch Icon */}
             <button
               onClick={onToggleCopilot}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all ${
                 isCopilotOpen
-                  ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm shadow-indigo-500/30'
-                  : 'border-indigo-500/40 bg-indigo-600/20 text-indigo-300 active:scale-95'
+                  ? 'border-indigo-500 bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'border-indigo-500/30 bg-indigo-950/40 text-indigo-300 active:bg-indigo-900/50'
               }`}
-              aria-label="Open AI Copilot"
+              aria-label="Toggle AI Copilot"
             >
-              <Bot className="h-3.5 w-3.5 text-indigo-200" />
-              <span className="font-semibold">AI Copilot</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <Bot className="h-4.5 w-4.5" />
+            </button>
+
+            {/* Quick Requisition Create Button */}
+            <button
+              onClick={onOpenCreateRfq}
+              className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 active:scale-95 transition-all min-h-[40px]"
+              aria-label="Create requisition"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">RFQ</span>
             </button>
           </div>
         </div>
 
-        {/* Collapsible Mobile Search Bar */}
+        {/* Expandable Mobile Search Bar */}
         {isMobileSearchOpen && (
-          <div className="px-3 pb-2.5 pt-1 border-t border-slate-800/60 bg-slate-950/60 animate-in fade-in duration-150">
+          <div className="px-3.5 pb-2.5 pt-1 border-t border-slate-800/60 bg-slate-950/70 animate-in fade-in duration-150">
             <div className="relative flex items-center">
-              <Search className="absolute left-3 h-3.5 w-3.5 text-slate-400" />
+              <Search className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 autoFocus
-                placeholder="Search RFQs, vendors, line items..."
+                placeholder="Search RFQs, suppliers, line items..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-850 py-1.5 pl-9 pr-8 text-xs text-slate-200 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-700 bg-slate-850 py-2 pl-9 pr-9 text-xs text-slate-200 placeholder-slate-400 focus:border-indigo-500 focus:outline-none shadow-inner"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 text-slate-400 hover:text-white"
+                  className="absolute right-3 p-1 text-slate-400 hover:text-white"
+                  aria-label="Clear search"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -252,66 +254,111 @@ export const Navigation: React.FC<NavigationProps> = ({
       </header>
 
       {/* ========================================================= */}
-      {/* 3. MOBILE BOTTOM NAVIGATION BAR (Visible on <md screens) */}
+      {/* 3. MOBILE BOTTOM NAVIGATION BAR (Visible on <= 767px screens) */}
       {/* ========================================================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-slate-800 bg-slate-900/95 backdrop-blur-lg pb-safe pt-1 text-[11px] font-medium text-slate-400 shadow-2xl">
+      <nav
+        role="navigation"
+        aria-label="Mobile Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-slate-800/90 bg-slate-900/98 backdrop-blur-xl pb-safe pt-1 text-[11px] font-medium text-slate-400 shadow-2xl"
+      >
+        {/* 1. Dashboard View */}
         <button
           onClick={() => setActiveTab('overview')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 min-h-[48px] transition-colors ${
-            activeTab === 'overview' ? 'text-indigo-400 font-bold' : 'text-slate-400 active:text-slate-200'
+          aria-current={activeTab === 'overview' ? 'page' : undefined}
+          className={`relative flex flex-col items-center justify-center flex-1 py-1.5 min-h-[48px] transition-all ${
+            activeTab === 'overview'
+              ? 'text-indigo-400 font-bold'
+              : 'text-slate-400 hover:text-slate-200 active:text-indigo-300'
           }`}
         >
-          <TrendingUp className="h-5 w-5 mb-0.5" />
-          <span>Analytics</span>
+          {activeTab === 'overview' && (
+            <span className="absolute top-0 h-0.5 w-6 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
+          )}
+          <LayoutDashboard className="h-5 w-5 mb-0.5 shrink-0" />
+          <span className="tracking-tight text-[10px] sm:text-[11px]">Dashboard</span>
         </button>
 
+        {/* 2. RFQs View */}
         <button
           onClick={() => setActiveTab('rfqs')}
-          className={`relative flex flex-col items-center justify-center flex-1 py-1 min-h-[48px] transition-colors ${
-            activeTab === 'rfqs' ? 'text-indigo-400 font-bold' : 'text-slate-400 active:text-slate-200'
+          aria-current={activeTab === 'rfqs' ? 'page' : undefined}
+          className={`relative flex flex-col items-center justify-center flex-1 py-1.5 min-h-[48px] transition-all ${
+            activeTab === 'rfqs'
+              ? 'text-indigo-400 font-bold'
+              : 'text-slate-400 hover:text-slate-200 active:text-indigo-300'
           }`}
         >
-          <FileText className="h-5 w-5 mb-0.5" />
-          <span>RFQs</span>
-          <span className="absolute top-1 right-3 rounded-full bg-slate-800 px-1 py-0.2 text-[9px] text-slate-300">
-            {rfqsCount}
-          </span>
+          {activeTab === 'rfqs' && (
+            <span className="absolute top-0 h-0.5 w-6 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
+          )}
+          <div className="relative">
+            <FileText className="h-5 w-5 mb-0.5 shrink-0" />
+            <span className="absolute -top-1 -right-2.5 rounded-full bg-slate-800 border border-slate-700 px-1 py-0.2 text-[9px] font-semibold text-slate-200">
+              {rfqsCount}
+            </span>
+          </div>
+          <span className="tracking-tight text-[10px] sm:text-[11px]">RFQs</span>
         </button>
 
+        {/* 3. Bids View */}
         <button
           onClick={() => setActiveTab('bids')}
-          className={`relative flex flex-col items-center justify-center flex-1 py-1 min-h-[48px] transition-colors ${
-            activeTab === 'bids' ? 'text-indigo-400 font-bold' : 'text-slate-400 active:text-slate-200'
+          aria-current={activeTab === 'bids' ? 'page' : undefined}
+          className={`relative flex flex-col items-center justify-center flex-1 py-1.5 min-h-[48px] transition-all ${
+            activeTab === 'bids'
+              ? 'text-indigo-400 font-bold'
+              : 'text-slate-400 hover:text-slate-200 active:text-indigo-300'
           }`}
         >
-          <Award className="h-5 w-5 mb-0.5" />
-          <span>Bids</span>
-          <span className="absolute top-1.5 right-4 h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          {activeTab === 'bids' && (
+            <span className="absolute top-0 h-0.5 w-6 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
+          )}
+          <div className="relative">
+            <Award className="h-5 w-5 mb-0.5 shrink-0" />
+            <span className="absolute -top-0.5 -right-1 h-2 w-2 rounded-full bg-emerald-400 animate-pulse ring-2 ring-slate-900" />
+          </div>
+          <span className="tracking-tight text-[10px] sm:text-[11px]">Bids</span>
         </button>
 
+        {/* 4. Vendors View */}
         <button
           onClick={() => setActiveTab('vendors')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 min-h-[48px] transition-colors ${
-            activeTab === 'vendors' ? 'text-indigo-400 font-bold' : 'text-slate-400 active:text-slate-200'
+          aria-current={activeTab === 'vendors' ? 'page' : undefined}
+          className={`relative flex flex-col items-center justify-center flex-1 py-1.5 min-h-[48px] transition-all ${
+            activeTab === 'vendors'
+              ? 'text-indigo-400 font-bold'
+              : 'text-slate-400 hover:text-slate-200 active:text-indigo-300'
           }`}
         >
-          <Building2 className="h-5 w-5 mb-0.5" />
-          <span>Vendors</span>
+          {activeTab === 'vendors' && (
+            <span className="absolute top-0 h-0.5 w-6 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
+          )}
+          <Building2 className="h-5 w-5 mb-0.5 shrink-0" />
+          <span className="tracking-tight text-[10px] sm:text-[11px]">Vendors</span>
         </button>
 
+        {/* 5. POs View */}
         <button
           onClick={() => setActiveTab('pos')}
-          className={`relative flex flex-col items-center justify-center flex-1 py-1 min-h-[48px] transition-colors ${
-            activeTab === 'pos' ? 'text-indigo-400 font-bold' : 'text-slate-400 active:text-slate-200'
+          aria-current={activeTab === 'pos' ? 'page' : undefined}
+          className={`relative flex flex-col items-center justify-center flex-1 py-1.5 min-h-[48px] transition-all ${
+            activeTab === 'pos'
+              ? 'text-indigo-400 font-bold'
+              : 'text-slate-400 hover:text-slate-200 active:text-indigo-300'
           }`}
         >
-          <ShoppingCart className="h-5 w-5 mb-0.5" />
-          <span>Orders</span>
-          {flaggedPosCount > 0 && (
-            <span className="absolute top-1 right-2.5 rounded-full bg-amber-500/30 border border-amber-500/50 px-1 text-[9px] font-bold text-amber-300">
-              {flaggedPosCount}
-            </span>
+          {activeTab === 'pos' && (
+            <span className="absolute top-0 h-0.5 w-6 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
           )}
+          <div className="relative">
+            <ShoppingCart className="h-5 w-5 mb-0.5 shrink-0" />
+            {flaggedPosCount > 0 && (
+              <span className="absolute -top-1 -right-2.5 rounded-full bg-amber-500/30 border border-amber-500/60 px-1 text-[9px] font-bold text-amber-300 leading-none py-0.5">
+                {flaggedPosCount}
+              </span>
+            )}
+          </div>
+          <span className="tracking-tight text-[10px] sm:text-[11px]">POs</span>
         </button>
       </nav>
     </>

@@ -4,6 +4,7 @@ import {
   Bot,
   Search,
   Plus,
+  Sparkles,
 } from 'lucide-react';
 
 import { RFQ, VendorBid, Vendor, PurchaseOrder, ChatMessage, RFQStatus } from './types/procurement';
@@ -47,7 +48,7 @@ export default function App() {
   const [newRfqBudget, setNewRfqBudget] = useState(150000);
   const [newRfqDept, setNewRfqDept] = useState('Infrastructure Engineering');
 
-  // AI Copilot State (Default closed on mobile to preserve screen width, open on desktop)
+  // AI Copilot State (Default closed on mobile, open on desktop)
   const [copilotDrawerOpen, setCopilotDrawerOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
@@ -114,7 +115,7 @@ export default function App() {
     const text = promptText || chatInput;
     if (!text.trim() || isAiTyping) return;
 
-    // Ensure Copilot is open when a prompt is sent
+    // Open Copilot when a prompt is dispatched
     setCopilotDrawerOpen(true);
 
     const userMsg: ChatMessage = {
@@ -164,7 +165,7 @@ export default function App() {
     if (!action) return;
     if (action.actionType === 'NAVIGATE_TAB') {
       setActiveTab(action.payload as any);
-      setCopilotDrawerOpen(false); // Close mobile copilot to show the destination tab
+      setCopilotDrawerOpen(false); // Close mobile copilot so user sees the new tab
     } else if (action.actionType === 'OPEN_COMPARISON') {
       setSelectedRfqId(action.payload);
       setActiveTab('bids');
@@ -271,9 +272,9 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-950 font-sans text-slate-100 antialiased">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-slate-950 font-sans text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
       {/* ========================================================= */}
-      {/* 1. NAVIGATION (Desktop Sidebar + Mobile Top Bar + Mobile Bottom Nav) */}
+      {/* 1. NAVIGATION (Desktop Sidebar + Mobile Top App Bar + Bottom Nav) */}
       {/* ========================================================= */}
       <Navigation
         activeTab={activeTab}
@@ -293,24 +294,24 @@ export default function App() {
       {/* ========================================================= */}
       {/* 2. MAIN WORKSPACE VIEWPORT */}
       {/* ========================================================= */}
-      <main className="flex flex-1 flex-col overflow-hidden bg-slate-900/40 min-w-0">
-        {/* Desktop Top Header Bar (Hidden on Mobile) */}
+      <main className="flex flex-1 flex-col overflow-hidden bg-slate-950 md:bg-slate-900/40 min-w-0">
+        {/* Desktop Top Header Bar (Hidden on <= 767px Mobile) */}
         <header className="hidden md:flex h-16 items-center justify-between border-b border-slate-800 px-6 backdrop-blur-md bg-slate-900/80 shrink-0">
           <div className="flex items-center gap-4 flex-1">
             <div className="relative w-80">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search RFQ IDs, vendors, line items..."
+                placeholder="Search RFQs, suppliers, line items..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800/90 py-1.5 pl-9 pr-3 text-xs text-slate-200 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/90 py-2 pl-9 pr-3 text-xs text-slate-200 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
 
             <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 font-mono text-[11px]">
-                FY-2025 Global Sourcing Core
+              <span className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 font-mono text-[11px]">
+                FY-2025 Global Hub
               </span>
             </div>
           </div>
@@ -318,7 +319,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsCreateRfqModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 active:scale-98 transition-all min-h-[38px]"
+              className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-500 active:scale-98 transition-all min-h-[38px]"
             >
               <Plus className="h-4 w-4" />
               <span>Create Requisition</span>
@@ -326,24 +327,22 @@ export default function App() {
 
             <button
               onClick={() => setCopilotDrawerOpen(!copilotDrawerOpen)}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all ${
                 copilotDrawerOpen
                   ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-300 shadow-sm shadow-indigo-500/20'
-                  : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-750'
               }`}
             >
               <Bot className="h-4 w-4 text-indigo-400" />
               <span>AI Copilot</span>
-              <span className="ml-0.5 rounded-full bg-indigo-500/30 px-1.5 py-0.2 text-[10px] text-indigo-200 font-mono">
-                Active
-              </span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             </button>
           </div>
         </header>
 
-        {/* Toast Alert Notification (Responsive positioning) */}
+        {/* Toast Alert Notification */}
         {toastMessage && (
-          <div className="fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-8 sm:w-auto z-50 flex items-center gap-3 rounded-xl border border-indigo-500/40 bg-slate-900/95 p-3.5 sm:p-4 text-xs shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-200 max-w-md">
+          <div className="fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-8 sm:w-auto z-50 flex items-center gap-3 rounded-2xl border border-indigo-500/40 bg-slate-900/95 p-3.5 sm:p-4 text-xs shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-4 duration-200 max-w-md">
             <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
             <div className="flex-1">
               <p className="font-bold text-white text-xs sm:text-sm">{toastMessage.title}</p>
@@ -352,8 +351,8 @@ export default function App() {
           </div>
         )}
 
-        {/* Content Body View Manager (With extra bottom padding for mobile navigation bar) */}
-        <div className="flex-1 overflow-y-auto touch-scroll p-3.5 sm:p-6 pb-24 md:pb-6 space-y-4 sm:space-y-6">
+        {/* Content Body View Manager (With extra bottom padding for mobile bottom bar + FAB) */}
+        <div className="flex-1 overflow-y-auto touch-scroll p-3.5 sm:p-6 pb-28 md:pb-6 min-w-0">
           {activeTab === 'overview' && (
             <OverviewView
               rfqs={rfqs}
@@ -452,16 +451,16 @@ export default function App() {
           )}
         </div>
 
-        {/* Floating AI Copilot Trigger for Mobile (< md) */}
+        {/* Floating AI Copilot Trigger for Mobile (< md screens) */}
         <div className="md:hidden fixed bottom-20 right-4 z-30">
           <button
             onClick={() => setCopilotDrawerOpen(true)}
-            className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-xl shadow-indigo-600/40 border border-indigo-400/30 hover:bg-indigo-500 active:scale-95 transition-all"
+            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 px-4 py-3 text-xs font-bold text-white shadow-xl shadow-indigo-600/40 border border-indigo-400/40 active:scale-95 transition-all"
             aria-label="Open AI Copilot Chat"
           >
-            <Bot className="h-4 w-4 text-indigo-100" />
+            <Sparkles className="h-4 w-4 text-indigo-100" />
             <span>AI Copilot</span>
-            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
           </button>
         </div>
       </main>
