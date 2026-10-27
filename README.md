@@ -5,97 +5,173 @@
 
 > **Project status:** Interactive demo / prototype. Sample procurement data and purchasing actions are simulated; this is **not** a production procurement system.
 
-<!-- TODO (before publishing): Insert the actual public deployment URL only after opening and verifying it. -->
-**Live demo:** Not yet linked — add the verified public URL after publishing from Google AI Studio.
+**🌐 Live demo:** [https://synthetix-sourcing-enterprise-ai-procurement-hub.ai.studio/](https://synthetix-sourcing-enterprise-ai-procurement-hub.ai.studio/)
 
-<!-- TODO (optional): Add real screenshots from the current app, not generated mockups. -->
+---
 
 ## Overview
 
-Synthetix Sourcing explores how procurement teams can manage sourcing activity and make more informed vendor decisions within a single interface. It combines a procurement-oriented dashboard with simulated approval workflows and an AI Copilot designed to assist with procurement-related questions and navigation.
+Synthetix Sourcing explores how procurement teams can manage sourcing activity and make more informed vendor decisions within a single interface.
+
+It combines a procurement-oriented dashboard with simulated approval workflows and an AI Copilot designed to assist with procurement-related questions and navigation.
 
 The app was prototyped using **Google AI Studio**. The visible build output indicates a **React + TypeScript** frontend using **Vite**; implementation and runtime details should be confirmed against the current source before publishing technical documentation.
 
-## Core features
+## Core Features
 
-| Module | Demo capabilities |
+| Module | Demo Capabilities |
 | --- | --- |
 | **Spend & Analytics** | Procurement KPIs, pipeline and savings indicators, compliance signals, and strategic insight widgets. |
 | **RFQs & Requisitions** | RFQ ledger, filters, budget/deadline details, line-item inspection, and a requisition creation interaction. |
-| **Bid Comparisons** | Side-by-side supplier evaluation using delivery lead time, warranty, ESG indicators, and composite scoring. |
+| **Bid Comparisons** | Supplier evaluation using delivery lead time, warranty, ESG indicators, and composite scoring. |
 | **Vendor Master Data** | Supplier directory, tier classifications, on-time delivery metrics, quality indicators, and vendor audit entry points. |
 | **Purchase Orders** | Simulated contract-award-to-PO flow, approval states, compliance holds, and waiver interactions. |
-| **AI Procurement Copilot** | Procurement Q&A, contextual navigation, and demo-oriented recommendations; behavior depends on whether a supported live model integration is configured. |
+| **AI Procurement Copilot** | Procurement Q&A, contextual navigation, and demo-oriented recommendations. Behavior depends on whether a supported live model integration is configured. |
 
-### Typical demo flows
+## Typical Demo Workflows
 
 1. Review procurement activity and compliance indicators in **Spend & Analytics**.
 2. Explore RFQs and inspect item-level requirements.
 3. Compare vendor proposals and their evaluation criteria.
 4. **Simulate** an award and examine the resulting purchase order.
-5. Explore approval/compliance states and ask the Copilot procurement-related questions.
+5. Explore approval and compliance states.
+6. Ask the AI Copilot procurement-related questions.
 
-## AI capabilities and limitations
+---
 
-The reported prototype includes a deterministic, offline-style Copilot experience and a configurable Gemini-powered mode. The **currently implemented model, credentials mechanism, server routing, and tool/action authorization must be checked in the source** before documenting them as verified features.
+## AI Procurement Copilot
 
-**Important:** AI-generated guidance and any apparent approvals in the demo are illustrative only. Scores, supplier information, compliance indicators, and records shown in the prototype should not be used for real financial or procurement decisions.
+The prototype includes an AI-assisted procurement experience designed to support procurement analysis and operational navigation.
 
-## Technology
+### Reported Capabilities
 
-**Visible/known from the current project context:**
+- Procurement-related conversational assistance.
+- Supplier comparison and bid evaluation insights.
+- Contextual navigation between application modules.
+- Procurement policy and compliance-related guidance.
+- Demo-oriented AI recommendations.
+- Deterministic offline-style responses and a configurable Gemini-powered mode.
 
-- React
-- TypeScript / TSX
-- Vite
-- Google AI Studio (app creation and preview)
-- Gemini integration / Copilot concept (verify the actual current model and call path)
+### AI Integration Notes
 
-<!-- TODO: Inspect package.json and the server folder to complete this list with exact libraries and versions. -->
+The currently implemented Gemini model, credential handling, server routing, and authorization mechanisms should be verified against the latest source code.
 
-## Getting started locally
+**Important:** AI-generated guidance and any apparent approvals are illustrative only. Scores, supplier information, compliance indicators, and records shown in the prototype should not be used for real financial or procurement decisions.
 
-The live project was created in Google AI Studio. Local setup instructions must be generated from the **current** `package.json`, lockfile, runtime requirements, and configuration—not guessed.
+---
 
-<!-- TODO: Replace with verified prerequisites, package-manager commands, dev script, build script, ports, and any required environment variables. -->
+## Technology Stack
 
-For a no-local-setup experience, use the app's **Preview** in Google AI Studio or its verified **Live demo** URL when published.
+The following technologies have been identified from the available project context:
+
+| Technology | Purpose |
+| --- | --- |
+| **React** | Component-based frontend development |
+| **TypeScript / TSX** | Typed application development |
+| **Vite** | Frontend build tooling |
+| **Google AI Studio** | AI-assisted application prototyping and preview |
+| **Google Gemini** | AI Copilot integration concept |
+
+Additional libraries, dependencies, and backend implementation details should be verified against the current project files.
+
+---
+
+## Getting Started
+
+### Live Demo
+
+You can explore the deployed prototype directly without installing any dependencies.
+
+**[Launch Synthetix Sourcing](https://synthetix-sourcing-enterprise-ai-procurement-hub.ai.studio/)**
+
+### Local Development
+
+The project was created using Google AI Studio.
+
+Local setup instructions should be generated from the current `package.json`, lockfile, runtime configuration, and environment requirements.
+
+Before running the application locally, review:
+
+- Required Node.js version.
+- Package manager and dependencies.
+- Available development and build scripts.
+- Environment variable requirements.
+- Backend and Gemini API configuration.
+
+Do not commit API keys, authentication tokens, or other secrets to the repository.
+
+---
 
 ## Deployment
 
-The intended deployment path is Google AI Studio's built-in **Publish** flow (subject to account and hosting eligibility).
+Synthetix Sourcing is available through a Google AI Studio live-app URL.
 
-<!-- TODO: Add only verified hosting provider, deployment URL, and deployment-specific notes once published. -->
+**Live Application:**
 
-**Deployment URL:** Pending verification.
+https://synthetix-sourcing-enterprise-ai-procurement-hub.ai.studio/
 
-## Security and data handling
+Additional hosting configuration and deployment details should be verified from the project's current settings.
 
-- Never commit `.env` files or API keys to GitHub.
-- Do not expose secret API credentials in public frontend code.
-- Handle Gemini credentials on a server-side path or approved secrets mechanism where applicable.
-- Review simulated actions carefully before adapting them to real procurement operations.
-- The current prototype is not evidence of real authentication, authorization, audit logging, SOX compliance, or production security controls.
+---
 
-## Design and responsiveness
+## Security and Data Handling
 
-The app uses a dark enterprise-style interface with procurement-focused navigation. Mobile responsiveness is **actively being refined**; do not describe it as fully validated until the updated design has been checked across mobile, tablet, and desktop screens.
+The application is intended as an interactive prototype.
 
-<!-- TODO: Add verified screenshots and accessibility/responsive testing notes. -->
+Before using similar functionality in a production procurement environment:
 
-## Future improvements
+- Keep API keys and credentials out of public frontend code.
+- Avoid committing `.env` files or secrets.
+- Implement server-side authentication and authorization.
+- Enforce role-based permissions for procurement actions.
+- Validate all data and business operations.
+- Introduce secure audit trails and approval controls.
+- Restrict AI tools and actions to explicitly authorized operations.
+- Verify security and compliance requirements independently.
 
-- Complete and validate mobile/tablet usability across all workflows.
-- Connect real, permission-controlled procurement APIs when moving beyond mock data.
-- Add persistent data storage, authentication, role-based access, and audit trails as needed.
-- Make AI responses traceable to authorized, current procurement data.
-- Introduce automated tests and deployment checks.
+The current prototype does not establish production-grade authentication, authorization, audit logging, or SOX compliance.
 
-## Repository notes
+---
 
-This repository showcases an **AI-assisted interactive prototype**, not a live purchasing platform. Keep its README aligned with the actual source, dependencies, and deployed URL.
+## Design and Responsiveness
 
-<!-- TODO: Add a LICENSE file and its exact name if licensing is intended. Do not assert MIT or another license without choosing one. -->
+The application uses a modern, dark-themed enterprise interface designed around procurement operations and AI-assisted workflows.
+
+### Design Objectives
+
+- Clear information hierarchy.
+- Consistent navigation across modules.
+- Readable procurement analytics.
+- Interactive data visualization.
+- Efficient supplier evaluation.
+- Accessible procurement workflows.
+- Responsive desktop, tablet, and mobile layouts.
+
+Mobile responsiveness is being refined and should be validated across supported screen sizes before being described as fully complete.
+
+---
+
+## Future Improvements
+
+- Complete mobile and tablet UX validation.
+- Integrate real procurement backend APIs.
+- Implement persistent data storage.
+- Add user authentication and role-based access.
+- Introduce auditable approval workflows.
+- Connect AI responses to authorized procurement data.
+- Implement automated unit and integration tests.
+- Add monitoring, logging, and deployment checks.
+- Improve accessibility and performance.
+
+---
+
+## Project Scope
+
+Synthetix Sourcing is an **AI-assisted procurement management prototype** developed to explore modern enterprise software interfaces, procurement workflows, and AI integration opportunities.
+
+The project demonstrates procurement-oriented UI interactions and simulated business processes.
+
+It is not a live procurement or purchasing platform.
 
 ---
 
