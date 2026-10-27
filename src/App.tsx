@@ -272,7 +272,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-slate-950 font-sans text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="flex flex-col md:flex-row h-[100dvh] w-full overflow-hidden bg-slate-950 font-sans text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
       {/* ========================================================= */}
       {/* 1. NAVIGATION (Desktop Sidebar + Mobile Top App Bar + Bottom Nav) */}
       {/* ========================================================= */}

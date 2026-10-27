@@ -44,12 +44,29 @@ export const Navigation: React.FC<NavigationProps> = ({
   isMobileSearchOpen,
   setIsMobileSearchOpen,
 }) => {
+  const getSectionTitle = () => {
+    switch (activeTab) {
+      case 'overview':
+        return 'Dashboard';
+      case 'rfqs':
+        return `RFQs (${rfqsCount})`;
+      case 'bids':
+        return 'Bid Matrix';
+      case 'vendors':
+        return `Vendors (${vendorsCount})`;
+      case 'pos':
+        return flaggedPosCount > 0 ? `Orders (${flaggedPosCount} Flag)` : 'Purchase Orders';
+      default:
+        return 'Sourcing';
+    }
+  };
+
   return (
     <>
       {/* ========================================================= */}
-      {/* 1. DESKTOP SIDEBAR (Visible on md+ screens) */}
+      {/* 1. DESKTOP SIDEBAR (Visible ONLY on md+ screens >= 768px) */}
       {/* ========================================================= */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-slate-800 bg-slate-900/95 shrink-0">
+      <aside className="hidden md:flex w-64 flex-col border-r border-slate-800 bg-slate-900/95 shrink-0 h-full">
         {/* App Title Header */}
         <div className="flex h-16 items-center gap-3 border-b border-slate-800 px-5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white shadow-lg shadow-indigo-600/30">
@@ -171,27 +188,34 @@ export const Navigation: React.FC<NavigationProps> = ({
       </aside>
 
       {/* ========================================================= */}
-      {/* 2. MOBILE TOP APP BAR (Visible on <= 767px screens) */}
+      {/* 2. MOBILE TOP APP BAR (Visible ONLY on <= 767px mobile) */}
       {/* ========================================================= */}
-      <header className="md:hidden sticky top-0 z-30 flex flex-col border-b border-slate-800/90 bg-slate-900/95 backdrop-blur-md">
+      <header className="md:hidden sticky top-0 z-30 flex flex-col w-full border-b border-slate-800/90 bg-slate-900/95 backdrop-blur-md shrink-0">
         <div className="flex h-14 items-center justify-between px-3.5 sm:px-4">
-          {/* Brand Identity */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white shadow-md shadow-indigo-600/30">
+          {/* Brand & Section Indicator */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white shadow-md shadow-indigo-600/30 shrink-0">
               <Sparkles className="h-4 w-4 text-indigo-100" />
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-sm font-bold tracking-tight text-white">Synthetix</span>
-              <span className="text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">AI</span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold tracking-tight text-white truncate">Synthetix</span>
+                <span className="rounded bg-indigo-500/20 px-1.5 py-0.2 text-[9px] font-bold text-indigo-300 border border-indigo-500/30">
+                  AI Hub
+                </span>
+              </div>
+              <p className="text-[11px] font-semibold text-indigo-400 truncate leading-tight">
+                {getSectionTitle()}
+              </p>
             </div>
           </div>
 
           {/* Quick Action Icons */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Search Button */}
             <button
               onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-              className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all ${
+              className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-all ${
                 isMobileSearchOpen || searchQuery
                   ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-300 shadow-sm'
                   : 'border-slate-800 bg-slate-850 text-slate-400 active:bg-slate-800'
@@ -201,34 +225,21 @@ export const Navigation: React.FC<NavigationProps> = ({
               <Search className="h-4 w-4" />
             </button>
 
-            {/* AI Copilot Quick Launch Icon */}
-            <button
-              onClick={onToggleCopilot}
-              className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all ${
-                isCopilotOpen
-                  ? 'border-indigo-500 bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'border-indigo-500/30 bg-indigo-950/40 text-indigo-300 active:bg-indigo-900/50'
-              }`}
-              aria-label="Toggle AI Copilot"
-            >
-              <Bot className="h-4.5 w-4.5" />
-            </button>
-
             {/* Quick Requisition Create Button */}
             <button
               onClick={onOpenCreateRfq}
-              className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 active:scale-95 transition-all min-h-[40px]"
+              className="flex items-center justify-center gap-1 rounded-xl bg-indigo-600 px-3 h-10 text-xs font-bold text-white shadow-sm hover:bg-indigo-500 active:scale-95 transition-all"
               aria-label="Create requisition"
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">RFQ</span>
+              <span>RFQ</span>
             </button>
           </div>
         </div>
 
         {/* Expandable Mobile Search Bar */}
         {isMobileSearchOpen && (
-          <div className="px-3.5 pb-2.5 pt-1 border-t border-slate-800/60 bg-slate-950/70 animate-in fade-in duration-150">
+          <div className="px-3.5 pb-2.5 pt-1 border-t border-slate-800/60 bg-slate-950/80 animate-in fade-in duration-150">
             <div className="relative flex items-center">
               <Search className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
