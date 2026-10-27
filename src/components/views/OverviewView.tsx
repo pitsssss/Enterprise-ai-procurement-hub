@@ -1,302 +1,306 @@
 import React from 'react';
-import {
-  DollarSign,
-  Sparkles,
-  ShieldAlert,
-  Clock,
-  ArrowUpRight,
-  Bot,
-  AlertTriangle,
-  ShieldCheck,
-  ChevronRight,
-  CheckCircle2,
-} from 'lucide-react';
 import { RFQ, PurchaseOrder } from '../../types/procurement';
+import { Card } from '../ui/Card';
+import { KpiMetric } from '../ui/KpiMetric';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import {
+  TrendingUp,
+  AlertTriangle,
+  Scale,
+  Award,
+  ArrowRight,
+  FileText,
+  ShieldCheck,
+  CheckCircle2,
+  DollarSign,
+  Layers,
+  Sparkles,
+} from 'lucide-react';
 
 interface OverviewViewProps {
   rfqs: RFQ[];
   pos: PurchaseOrder[];
   totalPipelineSpend: number;
+  openRfqsCount: number;
+  bidsUnderReviewCount: number;
   flaggedPosCount: number;
-  onSelectRfqForBids: (rfqId: string) => void;
-  onNavigateTab: (tab: 'rfqs' | 'bids' | 'pos') => void;
-  onSendPrompt: (promptText: string) => void;
+  onNavigateTab: (tab: any) => void;
   onResolveFlag: (poId: string) => void;
+  onEvaluateBids: (rfqId: string) => void;
+  onSendPrompt: (prompt: string) => void;
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
   rfqs,
   pos,
   totalPipelineSpend,
+  openRfqsCount,
+  bidsUnderReviewCount,
   flaggedPosCount,
-  onSelectRfqForBids,
   onNavigateTab,
-  onSendPrompt,
   onResolveFlag,
+  onEvaluateBids,
+  onSendPrompt,
 }) => {
+  const flaggedPos = pos.filter((p) => p.status === 'FLAGGED');
+  const evaluatedRfqs = rfqs.filter((r) => r.status === 'EVALUATION' || r.status === 'OPEN_FOR_BIDS');
+
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
-      {/* 1. Page Title Header (Clean and purposeful) */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* 1. Header & Quick Context */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#DDE3E1] dark:border-[#24423D] pb-4">
         <div>
-          <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white">
-            Procurement Intelligence
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
+            Strategic Spend & Sourcing Analytics
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Real-time pipeline commitments, savings & SOX compliance audit
+          <p className="mt-0.5 text-xs sm:text-sm text-[#647A7B] dark:text-[#8BA39F]">
+            FY-2025 Capital allocations, multi-vendor bid convergence, and SOX Section 404 audit queue.
           </p>
         </div>
-        <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-300">
-          <Bot className="h-3.5 w-3.5 text-indigo-400" />
-          <span>Copilot Engine v4.2</span>
+
+        <div className="flex items-center gap-2">
+          <Badge variant="success" size="md" dot>
+            OData ERP Stream Active
+          </Badge>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onSendPrompt('Provide an executive summary of current procurement pipeline risks and savings targets')}
+            leftIcon={<Sparkles className="h-3.5 w-3.5 text-[#C17C43] dark:text-[#D48D55]" />}
+          >
+            Copilot Briefing
+          </Button>
         </div>
       </div>
 
-      {/* 2. Responsive KPI Grid: 2x2 on mobile, 4 on desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        {/* Pipeline Spend */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-3 sm:p-4 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] sm:text-xs font-medium">Pipeline Spend</span>
-            <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              <DollarSign className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-base sm:text-2xl font-bold text-white tracking-tight">
-              ${(totalPipelineSpend / 1000).toFixed(1)}k
-            </div>
-            <div className="mt-1 flex items-center gap-1 text-[10px] sm:text-xs text-emerald-400 font-medium">
-              <ArrowUpRight className="h-3 w-3 shrink-0" />
-              <span className="truncate">{rfqs.length} Events Active</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Realized Savings */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-3 sm:p-4 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] sm:text-xs font-medium">YTD Savings</span>
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <Sparkles className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-base sm:text-2xl font-bold text-white tracking-tight">
-              $148,200
-            </div>
-            <div className="mt-1 text-[10px] sm:text-xs text-indigo-400 font-medium truncate">
-              12.4% below budget
-            </div>
-          </div>
-        </div>
-
-        {/* SOX Policy Flags */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-3 sm:p-4 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] sm:text-xs font-medium">Policy Flags</span>
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <ShieldAlert className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-base sm:text-2xl font-bold text-amber-400 tracking-tight">
-              {flaggedPosCount} Action Req.
-            </div>
-            <div className="mt-1 text-[10px] sm:text-xs text-slate-400 font-medium truncate">
-              Single-source cap
-            </div>
-          </div>
-        </div>
-
-        {/* Avg Turnaround */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-3 sm:p-4 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] sm:text-xs font-medium">Avg Cycle Time</span>
-            <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              <Clock className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div className="mt-2">
-            <div className="text-base sm:text-2xl font-bold text-white tracking-tight">
-              6.2 Days
-            </div>
-            <div className="mt-1 text-[10px] sm:text-xs text-emerald-400 font-medium truncate">
-              -2.4d with auto RFQ
-            </div>
-          </div>
-        </div>
+      {/* 2. Structured Enterprise KPI Matrix */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <KpiMetric
+          label="Active Pipeline Spend"
+          value={`$${(totalPipelineSpend / 1000).toFixed(1)}k`}
+          subValue="USD"
+          trend={{ direction: 'up', value: '+14.2%', label: 'vs Q3 Baseline', positive: true }}
+          icon={<DollarSign className="h-4 w-4" />}
+        />
+        <KpiMetric
+          label="Open Sourcing RFQs"
+          value={openRfqsCount}
+          subValue="Active Cycles"
+          trend={{ direction: 'neutral', value: '4 Sourcing Packages', label: 'IT & Machining' }}
+          icon={<FileText className="h-4 w-4" />}
+        />
+        <KpiMetric
+          label="Proposals in Evaluation"
+          value={bidsUnderReviewCount}
+          subValue="Vendor Bids"
+          trend={{ direction: 'up', value: '3 Ready for Award', label: 'Apex, HyperScale, SwissFab', positive: true }}
+          icon={<Award className="h-4 w-4" />}
+        />
+        <KpiMetric
+          label="SOX Exception Holds"
+          value={flaggedPosCount}
+          subValue="Action Needed"
+          trend={{
+            direction: flaggedPosCount > 0 ? 'down' : 'up',
+            value: flaggedPosCount > 0 ? 'Form CS-8 Pending' : 'All Orders Cleared',
+            label: 'Threshold >$250k',
+            positive: flaggedPosCount === 0,
+          }}
+          icon={<ShieldCheck className="h-4 w-4" />}
+          badge={
+            flaggedPosCount > 0 ? (
+              <Badge variant="danger" size="sm">Hold Active</Badge>
+            ) : (
+              <Badge variant="success" size="sm">Compliant</Badge>
+            )
+          }
+        />
       </div>
 
-      {/* 3. Highlight AI Strategic Recommendation Banner */}
-      <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-b sm:bg-gradient-to-r from-indigo-950/70 via-slate-900 to-indigo-950/40 p-4 sm:p-5 shadow-lg">
-        <div className="flex flex-col gap-3.5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-2">
+      {/* 3. Executive Strategic Trade-Off Radar Card */}
+      <Card padding="md" className="border-l-4 border-l-[#C17C43] dark:border-l-[#D48D55]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-2xl">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/40 bg-indigo-500/20 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-200">
-                <Bot className="h-3 w-3 text-indigo-300" />
-                <span>Trade-Off Analysis Ready</span>
-              </span>
-              <span className="text-[11px] font-mono font-semibold text-emerald-400">
-                Score: 95/100
-              </span>
+              <span className="flex h-2 w-2 rounded-full bg-[#C17C43] dark:bg-[#D48D55]" />
+              <Badge variant="accent" size="sm">EXECUTIVE SOURCING RECOMMENDATION</Badge>
+              <span className="text-xs font-mono text-[#647A7B] dark:text-[#8BA39F]">RFQ-2025-0891</span>
             </div>
-
-            <h2 className="text-sm sm:text-base font-bold text-white leading-snug">
-              Apex Data Infrastructures recommended for RFQ-2025-0891
+            <h2 className="text-base sm:text-lg font-bold text-[#17272A] dark:text-[#EBF1F0] tracking-tight">
+              High-Density GPU Nodes: Apex Data vs. HyperScale Micro-Electronics
             </h2>
-
-            <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
-              Apex’s $388,500 bid delivers in 4 weeks, avoiding an estimated <strong>$42,000 in downstream idle labor costs</strong> associated with HyperScale’s 9-week turnaround.
+            <p className="text-xs sm:text-sm text-[#34484B] dark:text-[#C2D3CF] leading-relaxed">
+              Apex Data offers <strong className="text-[#17272A] dark:text-[#EBF1F0]">$388,500 total commitment</strong> (7.5% below budget ceiling) with a 36-month enterprise warranty. HyperScale proposes a lower upfront price ($362,000) but requires an 8-week delivery lead time, incurring an estimated $42,000 platform delay penalty.
             </p>
-
-            {/* Quick Micro Comparison Table on Mobile */}
-            <div className="grid grid-cols-2 gap-2 pt-1 sm:hidden text-[11px]">
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-2.5">
-                <div className="font-bold text-emerald-300">Apex Data (Recommended)</div>
-                <div className="font-mono text-white text-xs font-semibold mt-0.5">$388,500</div>
-                <div className="text-[10px] text-slate-300">4-week delivery • 92 ESG</div>
-              </div>
-              <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-2.5">
-                <div className="font-bold text-amber-300">HyperScale (High Risk)</div>
-                <div className="font-mono text-white text-xs font-semibold mt-0.5">$365,000</div>
-                <div className="text-[10px] text-slate-300">9-week shipping penalty</div>
-              </div>
-            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row shrink-0 gap-2 pt-2 lg:pt-0">
-            <button
-              onClick={() => onSelectRfqForBids('rfq-101')}
-              className="flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-500 active:scale-98 transition-all min-h-[44px]"
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onNavigateTab('bids')}
+              rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
             >
-              Open Evaluation Matrix
-            </button>
-            <button
-              onClick={() => onSendPrompt('Draft a $378,000 counter-offer for Apex Data')}
-              className="flex items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 active:scale-98 transition-all min-h-[44px]"
+              Open Bid Matrix
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => onSendPrompt('Compare Apex Data Infrastructures warranty terms against HyperScale lead time penalty')}
             >
-              Draft Counter-Offer
-            </button>
+              Consult Copilot
+            </Button>
           </div>
         </div>
-      </div>
 
-      {/* 4. Two-Column Dashboard Widgets */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Priority Requisitions List */}
-        <div className="col-span-1 lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 sm:p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        {/* Trade-off Micro Comparative Strip */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-[#DDE3E1] dark:border-[#24423D]">
+          <div className="p-3 rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] border border-[#DDE3E1] dark:border-[#24423D] flex items-center justify-between text-xs">
             <div>
-              <h3 className="text-xs sm:text-sm font-bold text-white">Priority Requisitions</h3>
-              <p className="text-[11px] text-slate-400">Live bidding and technical evaluation status</p>
+              <p className="font-semibold text-[#17272A] dark:text-[#EBF1F0]">Apex Data Infrastructures</p>
+              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">4-Week Delivery • 36 Mo. Warranty • 94 Score</p>
             </div>
-            <button
-              onClick={() => onNavigateTab('rfqs')}
-              className="text-xs font-bold text-indigo-400 hover:text-indigo-300 min-h-[36px] flex items-center"
-            >
-              View All ({rfqs.length}) &rarr;
-            </button>
+            <Badge variant="success" size="sm">Recommended</Badge>
           </div>
 
-          <div className="mt-3 divide-y divide-slate-800/80">
-            {rfqs.slice(0, 3).map((rfq) => (
-              <div
+          <div className="p-3 rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] border border-[#DDE3E1] dark:border-[#24423D] flex items-center justify-between text-xs">
+            <div>
+              <p className="font-semibold text-[#17272A] dark:text-[#EBF1F0]">HyperScale Micro-Electronics</p>
+              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">8-Week Delivery • 12 Mo. Warranty • 86 Score</p>
+            </div>
+            <Badge variant="warning" size="sm">Lead Time Risk</Badge>
+          </div>
+        </div>
+      </Card>
+
+      {/* 4. Active Requisition Pipeline & SOX Compliance Split */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2 Cols: Priority Sourcing Requisitions */}
+        <div className="lg:col-span-2 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm sm:text-base font-bold text-[#17272A] dark:text-[#EBF1F0] tracking-tight">
+              Active Sourcing Requisitions
+            </h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onNavigateTab('rfqs')}
+              rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
+            >
+              View All RFQs
+            </Button>
+          </div>
+
+          <div className="space-y-2.5">
+            {evaluatedRfqs.map((rfq) => (
+              <Card
                 key={rfq.id}
-                onClick={() => onSelectRfqForBids(rfq.id)}
-                className="group flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2.5 cursor-pointer hover:bg-slate-800/40 -mx-2 px-2.5 rounded-xl transition-all"
+                padding="sm"
+                interactive
+                onClick={() => onEvaluateBids(rfq.id)}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-indigo-400">{rfq.rfqNumber}</span>
-                    <span className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors">
-                      {rfq.title}
+                    <span className="font-mono text-xs font-semibold text-[#173E38] dark:text-[#4EA89A]">
+                      {rfq.rfqNumber}
                     </span>
+                    <Badge variant="default" size="sm">{rfq.category}</Badge>
+                    <Badge
+                      variant={rfq.status === 'EVALUATION' ? 'accent' : 'primary'}
+                      size="sm"
+                    >
+                      {rfq.status === 'EVALUATION' ? 'Evaluation Active' : 'Open for Bids'}
+                    </Badge>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                    <span className="rounded bg-slate-800 px-1.5 py-0.5 text-slate-300 font-medium">
-                      {rfq.category}
-                    </span>
-                    <span>•</span>
-                    <span className="font-mono text-slate-300">${rfq.budget.toLocaleString()} USD</span>
-                    <span>•</span>
-                    <span className="font-medium">{rfq.bidsReceivedCount} Bids</span>
-                  </div>
+                  <p className="text-xs sm:text-sm font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                    {rfq.title}
+                  </p>
+                  <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                    {rfq.department} • Deadline: {rfq.deadline} • {rfq.lineItems.length} SKUs
+                  </p>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0">
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
-                      rfq.status === 'EVALUATION'
-                        ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                        : rfq.status === 'AWARDED'
-                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                        : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300'
-                    }`}
-                  >
-                    {rfq.status.replace('_', ' ')}
+                <div className="flex sm:flex-col items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-[#DDE3E1] dark:border-[#24423D] shrink-0">
+                  <span className="text-xs text-[#647A7B] dark:text-[#8BA39F]">Authorized Budget</span>
+                  <span className="text-sm font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">
+                    ${rfq.budget.toLocaleString()}
                   </span>
-                  <div className="p-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 group-hover:border-indigo-500 group-hover:text-white transition-all">
-                    <ChevronRight className="h-4 w-4" />
-                  </div>
+                  <span className="text-[10px] text-[#C17C43] dark:text-[#D48D55] font-medium">
+                    {rfq.bidsReceivedCount} Quotes Received
+                  </span>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
 
-        {/* Compliance Watchdog */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4 sm:p-5 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-xs sm:text-sm font-bold text-white">Compliance Watchdog</h3>
-              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 border border-amber-500/30">
-                SOX v4.2
-              </span>
-            </div>
+        {/* Right 1 Col: SOX Section 404 Watchdog */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm sm:text-base font-bold text-[#17272A] dark:text-[#EBF1F0] tracking-tight">
+              SOX Section 404 Watchdog
+            </h2>
+            <Badge variant="danger" size="sm">Mandatory Dual-Audit</Badge>
+          </div>
 
-            <div className="mt-3.5 space-y-3">
-              {pos
-                .filter((p) => p.status === 'FLAGGED')
-                .map((p) => (
-                  <div key={p.id} className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-3 sm:p-3.5">
-                    <div className="flex items-start gap-2.5 text-rose-300">
-                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-rose-400" />
-                      <div className="flex-1">
-                        <p className="font-bold text-xs">{p.poNumber} — Threshold Block</p>
-                        <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                          {p.complianceWarning}
-                        </p>
-                        <button
-                          onClick={() => onResolveFlag(p.id)}
-                          className="mt-2.5 w-full flex items-center justify-center rounded-xl bg-rose-600/30 px-3 py-2 text-xs font-bold text-rose-200 border border-rose-500/40 hover:bg-rose-600/40 active:scale-98 transition-all min-h-[44px]"
-                        >
-                          Attach Form CS-8 Waiver &rarr;
-                        </button>
-                      </div>
+          <Card padding="md" className="space-y-3.5 bg-white dark:bg-[#11211E]">
+            {flaggedPos.length > 0 ? (
+              flaggedPos.map((po) => (
+                <div key={po.id} className="space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#A22424]/10 text-[#A22424] shrink-0 mt-0.5">
+                      <AlertTriangle className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-[#A22424] dark:text-[#EA5454]">
+                        Single-Source Capital Hold
+                      </p>
+                      <p className="font-mono text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                        {po.poNumber} • ${po.amount.toLocaleString()} USD
+                      </p>
+                      <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F] mt-0.5">
+                        {po.vendorName}
+                      </p>
                     </div>
                   </div>
-                ))}
 
-              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-300 space-y-1.5">
-                <div className="flex items-center gap-2 text-emerald-400 font-semibold text-[11px]">
-                  <ShieldCheck className="h-4 w-4 shrink-0" />
-                  <span>Dual-Approval Audit Active</span>
+                  <div className="rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] p-2.5 border border-[#DDE3E1] dark:border-[#24423D] text-[11px] text-[#34484B] dark:text-[#C2D3CF] leading-relaxed">
+                    {po.complianceWarning}
+                  </div>
+
+                  <div className="pt-1 flex flex-col gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      fullWidth
+                      onClick={() => onResolveFlag(po.id)}
+                      leftIcon={<CheckCircle2 className="h-4 w-4" />}
+                    >
+                      Authorize Form CS-8 Sole-Source Waiver
+                    </Button>
+                    <button
+                      onClick={() => onNavigateTab('pos')}
+                      className="text-center text-[11px] text-[#647A7B] dark:text-[#8BA39F] hover:underline"
+                    >
+                      Inspect Full Purchase Order File
+                    </button>
+                  </div>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  All commitments &gt; $50k require secondary VP sign-off. Anti-split algorithms active.
+              ))
+            ) : (
+              <div className="py-6 text-center space-y-2">
+                <CheckCircle2 className="mx-auto h-8 w-8 text-[#1B6A4A] dark:text-[#38B482]" />
+                <p className="text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                  All Commitments Reconciled
+                </p>
+                <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                  Zero active SOX single-source holds.
                 </p>
               </div>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
-            <span>SOX Governance Status</span>
-            <span className="flex items-center gap-1 text-emerald-400 font-semibold">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              100% Monitored
-            </span>
-          </div>
+            )}
+          </Card>
         </div>
       </div>
     </div>

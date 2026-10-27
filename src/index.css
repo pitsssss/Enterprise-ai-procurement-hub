@@ -1,19 +1,86 @@
 @import "tailwindcss";
 
-@theme {
-  --color-slate-850: #0f172a;
-  --color-slate-900: #0b1120;
-  --color-slate-950: #020617;
-}
+@layer base {
+  :root {
+    --color-primary: #173e38;
+    --color-primary-hover: #12312c;
+    --color-primary-light: #255d54;
+    --color-primary-subtle: #edf4f2;
+    --color-accent: #c17c43;
+    --color-accent-hover: #a86731;
+    --color-accent-subtle: #fcf4ee;
+    --color-bg-canvas: #f6f5f1;
+    --color-bg-surface: #ffffff;
+    --color-bg-subtle: #faf9f6;
+    --color-bg-muted: #eeece6;
+    --color-text-ink: #17272a;
+    --color-text-body: #34484b;
+    --color-text-muted: #647a7b;
+    --color-text-faint: #92a4a3;
+    --color-border-subtle: #dde3e1;
+    --color-border-strong: #bac6c3;
+    --color-status-success: #1b6a4a;
+    --color-status-success-bg: #edf7f2;
+    --color-status-warning: #9a5918;
+    --color-status-warning-bg: #fdf5ed;
+    --color-status-danger: #a22424;
+    --color-status-danger-bg: #fdeded;
+    --color-status-info: #1f567a;
+    --color-status-info-bg: #eef6fb;
+  }
 
-body {
-  margin: 0;
-  padding: 0;
-  background-color: #020617;
-  color: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
+  .dark {
+    --color-primary: #2e7a6f;
+    --color-primary-hover: #388d81;
+    --color-primary-light: #4ea89a;
+    --color-primary-subtle: #122522;
+    --color-accent: #d48d55;
+    --color-accent-hover: #e09f6b;
+    --color-accent-subtle: #291d14;
+    --color-bg-canvas: #0b1614;
+    --color-bg-surface: #11211e;
+    --color-bg-subtle: #162b27;
+    --color-bg-muted: #1d3732;
+    --color-text-ink: #ebf1f0;
+    --color-text-body: #c2d3cf;
+    --color-text-muted: #8ba39f;
+    --color-text-faint: #59736f;
+    --color-border-subtle: #24423d;
+    --color-border-strong: #335952;
+    --color-status-success: #38b482;
+    --color-status-success-bg: #0f2c20;
+    --color-status-warning: #e28e36;
+    --color-status-warning-bg: #32200f;
+    --color-status-danger: #ea5454;
+    --color-status-danger-bg: #321313;
+    --color-status-info: #4da6e3;
+    --color-status-info-bg: #102636;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-bg-canvas);
+    color: var(--color-text-ink);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Tabular numbers for clean enterprise data alignment */
+  .tabular-nums, table, [data-tabular] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Arabic typography support */
+  [lang="ar"], .font-arabic {
+    font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', sans-serif;
+  }
+
+  .font-mono {
+    font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  }
 }
 
 /* Safe area padding for mobile devices */
@@ -31,20 +98,29 @@ body {
   overscroll-behavior-y: contain;
 }
 
+/* Elegant enterprise scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #c7d2cf;
   border-radius: 3px;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #2b4944;
+}
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #9ab0ac;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3e6861;
 }

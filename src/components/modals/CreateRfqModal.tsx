@@ -1,5 +1,8 @@
 import React from 'react';
-import { FileText, X, Sparkles } from 'lucide-react';
+import { FileText, X } from 'lucide-react';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Select } from '../ui/Select';
 
 interface CreateRfqModalProps {
   isOpen: boolean;
@@ -31,98 +34,93 @@ export const CreateRfqModal: React.FC<CreateRfqModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-150">
-      <div className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto touch-scroll">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-150"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#11211E] p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto touch-scroll"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/30">
-              <FileText className="h-4.5 w-4.5" />
+        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-[#DDE3E1] dark:border-[#24423D]">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#173E38]/10 text-[#173E38] dark:bg-[#2E7A6F]/20 dark:text-[#4EA89A]">
+              <FileText className="h-4 w-4" />
             </div>
-            <h3 className="text-sm sm:text-base font-bold text-white">Draft New RFQ Requisition</h3>
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-[#17272A] dark:text-[#EBF1F0]">
+                Draft Capital Requisition
+              </h3>
+              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                Automated SOX dual-approval guidelines will apply.
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-1 rounded-md text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0]"
             aria-label="Close dialog"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={onSubmit} className="mt-4 space-y-3.5 text-xs">
-          <div>
-            <label className="block text-slate-300 font-medium mb-1">Requisition Title</label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Next-Gen Liquid Cooled Data Center Pods"
-              className="w-full rounded-xl border border-slate-700 bg-slate-800 p-3 text-xs sm:text-sm text-slate-200 placeholder-slate-400 focus:border-indigo-500 focus:outline-none min-h-[44px]"
-            />
-          </div>
+        <form onSubmit={onSubmit} className="mt-4 space-y-3.5">
+          <Input
+            label="Requisition Title"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Next-Gen Enterprise Fiber Switches Batch C"
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-300 font-medium mb-1">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 p-3 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-indigo-500 min-h-[44px]"
-              >
-                <option value="IT Hardware">IT Hardware</option>
-                <option value="Precision Machining">Precision Machining</option>
-                <option value="Facility Operations">Facility Operations</option>
-                <option value="Logistics">Logistics</option>
-                <option value="Raw Materials">Raw Materials</option>
-              </select>
-            </div>
+            <Select
+              label="Sourcing Portfolio Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as any)}
+              options={[
+                { value: 'IT Hardware', label: 'IT Hardware' },
+                { value: 'Precision Machining', label: 'Precision Machining' },
+                { value: 'Facility Operations', label: 'Facility Operations' },
+                { value: 'Logistics', label: 'Logistics & Distribution' },
+                { value: 'Raw Materials', label: 'Raw Materials' },
+              ]}
+            />
 
-            <div>
-              <label className="block text-slate-300 font-medium mb-1">Target Budget (USD)</label>
-              <input
-                type="number"
-                min={1000}
-                value={budget}
-                onChange={(e) => setBudget(Number(e.target.value))}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 p-3 text-xs sm:text-sm text-slate-200 focus:border-indigo-500 focus:outline-none min-h-[44px]"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-slate-300 font-medium mb-1">Requesting Department</label>
-            <input
-              type="text"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-800 p-3 text-xs sm:text-sm text-slate-200 focus:border-indigo-500 focus:outline-none min-h-[44px]"
+            <Input
+              label="Authorized Budget Ceiling ($)"
+              type="number"
+              required
+              value={budget}
+              onChange={(e) => setBudget(Number(e.target.value))}
+              prefixText="$"
             />
           </div>
 
-          <div className="rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-3 text-[11px] text-indigo-300 flex items-start gap-2.5">
-            <Sparkles className="h-4 w-4 shrink-0 text-indigo-400 mt-0.5" />
-            <span className="leading-relaxed">
-              Our AI engine will auto-verify line-item standard tolerances and invite 3 Tier-1 approved suppliers upon publishing.
-            </span>
+          <Input
+            label="Requesting Department / Cost Center"
+            required
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            placeholder="e.g. Infrastructure Platform Engineering"
+          />
+
+          <div className="rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] p-3 text-[11px] text-[#34484B] dark:text-[#C2D3CF] border border-[#DDE3E1] dark:border-[#24423D] leading-relaxed">
+            <strong className="text-[#17272A] dark:text-[#EBF1F0]">SOX Compliance Pre-Check: </strong>
+            Requisitions exceeding $250,000 USD will automatically enforce a minimum 3-vendor competitive bidding window and require Group Treasury co-signature.
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full sm:w-auto rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 active:scale-98 transition-all min-h-[44px]"
-            >
+          <div className="pt-2 flex items-center justify-end gap-2.5">
+            <Button variant="secondary" size="md" onClick={onClose} type="button">
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="w-full sm:w-auto rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white shadow-md hover:bg-indigo-500 active:scale-98 transition-all min-h-[44px]"
-            >
-              Publish Requisition
-            </button>
+            </Button>
+            <Button variant="primary" size="md" type="submit">
+              Publish RFQ to Vendor Network
+            </Button>
           </div>
         </form>
       </div>

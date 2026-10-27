@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
-import { ShieldAlert, AlertTriangle, Check, Filter } from 'lucide-react';
 import { PurchaseOrder } from '../../types/procurement';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import {
+  ShoppingCart,
+  CheckCircle2,
+  AlertTriangle,
+  FileText,
+  Clock,
+  ShieldCheck,
+  Building,
+  DollarSign,
+  ArrowRight,
+  Sparkles,
+} from 'lucide-react';
 
 interface PosViewProps {
   pos: PurchaseOrder[];
@@ -17,171 +31,208 @@ export const PosView: React.FC<PosViewProps> = ({
 }) => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'FLAGGED' | 'PENDING_APPROVAL' | 'APPROVED'>('ALL');
 
-  const filteredPos = pos.filter((po) => {
+  const filteredPos = pos.filter((p) => {
     if (statusFilter === 'ALL') return true;
-    return po.status === statusFilter;
+    return p.status === statusFilter;
   });
 
   const flaggedCount = pos.filter((p) => p.status === 'FLAGGED').length;
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
-      {/* Header and Batch Audit Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* 1. View Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#DDE3E1] dark:border-[#24423D] pb-4">
         <div>
-          <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white">
-            Purchase Orders & SOX Delegations
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
+            Purchase Orders & SOX Dual-Authorization
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Single-source authorization, approval workflows, and commitment releases
+          <p className="mt-0.5 text-xs sm:text-sm text-[#647A7B] dark:text-[#8BA39F]">
+            Enforce fiduciary approval tiers, Form CS-8 Sole-Source waivers, and SAP S/4HANA dispatch status.
           </p>
         </div>
 
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={onBatchAudit}
-          className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-700 active:scale-98 transition-all min-h-[44px]"
+          leftIcon={<Sparkles className="h-4 w-4 text-[#C17C43] dark:text-[#D48D55]" />}
         >
-          <ShieldAlert className="h-4 w-4 text-amber-400" />
-          <span>Batch Audit Ledger</span>
-        </button>
+          Audit All Open Orders
+        </Button>
       </div>
 
-      {/* Horizontal Status Filter Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto touch-scroll pb-1 scrollbar-none">
+      {/* 2. Filter Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto touch-scroll scrollbar-none py-1">
         <button
           onClick={() => setStatusFilter('ALL')}
-          className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all min-h-[38px] ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 select-none min-h-[34px] ${
             statusFilter === 'ALL'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-              : 'border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850'
+              ? 'bg-[#173E38] text-white dark:bg-[#2E7A6F] shadow-2xs font-semibold'
+              : 'bg-white dark:bg-[#162B27] text-[#647A7B] dark:text-[#8BA39F] border border-[#DDE3E1] dark:border-[#24423D] hover:bg-[#FAF9F6]'
           }`}
         >
           All Orders ({pos.length})
         </button>
-
         <button
           onClick={() => setStatusFilter('FLAGGED')}
-          className={`shrink-0 flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all min-h-[38px] ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 select-none min-h-[34px] ${
             statusFilter === 'FLAGGED'
-              ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/30'
-              : 'border border-amber-500/30 bg-amber-950/20 text-amber-300 hover:bg-amber-950/40'
+              ? 'bg-[#A22424] text-white shadow-2xs font-semibold'
+              : 'bg-white dark:bg-[#162B27] text-[#A22424] dark:text-[#EA5454] border border-[#DDE3E1] dark:border-[#24423D] hover:bg-[#FAF9F6]'
           }`}
         >
-          <span>Flagged Exceptions</span>
-          {flaggedCount > 0 && (
-            <span className="rounded-full bg-amber-500 px-1.5 py-0.2 text-[9px] font-bold text-slate-950">
-              {flaggedCount}
-            </span>
-          )}
+          SOX Exceptions ({flaggedCount})
         </button>
-
         <button
           onClick={() => setStatusFilter('PENDING_APPROVAL')}
-          className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all min-h-[38px] ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 select-none min-h-[34px] ${
             statusFilter === 'PENDING_APPROVAL'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850'
+              ? 'bg-[#173E38] text-white dark:bg-[#2E7A6F] shadow-2xs font-semibold'
+              : 'bg-white dark:bg-[#162B27] text-[#647A7B] dark:text-[#8BA39F] border border-[#DDE3E1] dark:border-[#24423D] hover:bg-[#FAF9F6]'
           }`}
         >
           Pending Authorization
         </button>
-
         <button
           onClick={() => setStatusFilter('APPROVED')}
-          className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all min-h-[38px] ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 select-none min-h-[34px] ${
             statusFilter === 'APPROVED'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850'
+              ? 'bg-[#173E38] text-white dark:bg-[#2E7A6F] shadow-2xs font-semibold'
+              : 'bg-white dark:bg-[#162B27] text-[#647A7B] dark:text-[#8BA39F] border border-[#DDE3E1] dark:border-[#24423D] hover:bg-[#FAF9F6]'
           }`}
         >
-          Approved
+          Approved & Dispatched
         </button>
       </div>
 
-      {/* PO List Cards */}
-      <div className="space-y-3.5">
-        {filteredPos.map((po) => (
-          <div
-            key={po.id}
-            className={`rounded-2xl border p-4 sm:p-5 transition-all ${
-              po.status === 'FLAGGED'
-                ? 'border-amber-500/40 bg-slate-900 ring-1 ring-amber-500/20 shadow-lg'
-                : 'border-slate-800 bg-slate-900/90'
-            }`}
-          >
-            {/* Top Row: PO Number, Status & Terms */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-sm font-bold text-white">{po.poNumber}</span>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
-                    po.status === 'APPROVED'
-                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                      : po.status === 'FLAGGED'
-                      ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
-                      : po.status === 'DISPATCHED'
-                      ? 'border-blue-500/30 bg-blue-500/10 text-blue-300'
-                      : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                  }`}
-                >
-                  {po.status.replace('_', ' ')}
-                </span>
-              </div>
-              <span className="text-[11px] text-slate-400 font-medium">Terms: {po.paymentTerms}</span>
-            </div>
+      {/* 3. Orders Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {filteredPos.map((po) => {
+          const isFlagged = po.status === 'FLAGGED';
+          const isApproved = po.status === 'APPROVED';
 
-            {/* Supplier & Linked RFQ */}
-            <div className="mt-2 text-xs text-slate-300">
-              Supplier: <span className="font-semibold text-white">{po.vendorName}</span> • Requisition:{' '}
-              <span className="font-mono text-indigo-400">{po.rfqRef}</span>
-            </div>
+          return (
+            <Card
+              key={po.id}
+              padding="md"
+              className={`flex flex-col justify-between space-y-4 ${
+                isFlagged
+                  ? 'border-l-4 border-l-[#A22424] bg-white dark:bg-[#11211E]'
+                  : isApproved
+                  ? 'border-l-4 border-l-[#1B6A4A] bg-white dark:bg-[#11211E]'
+                  : 'border-[#DDE3E1] dark:border-[#24423D]'
+              }`}
+            >
+              <div className="space-y-3">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[#173E38] dark:text-[#4EA89A]">
+                        {po.poNumber}
+                      </span>
+                      <span className="text-[11px] text-[#647A7B] dark:text-[#8BA39F] font-mono">
+                        Ref: {po.rfqRef}
+                      </span>
+                    </div>
+                    <h3 className="mt-1 font-bold text-sm sm:text-base text-[#17272A] dark:text-[#EBF1F0]">
+                      {po.vendorName}
+                    </h3>
+                  </div>
 
-            {/* Commitment Value and Action Button */}
-            <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400">
-                  Commitment Value
-                </span>
-                <p className="font-mono text-base sm:text-xl font-bold text-white">
-                  ${po.amount.toLocaleString()} {po.currency}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {po.status === 'FLAGGED' ? (
-                  <button
-                    onClick={() => onResolveFlag(po.id)}
-                    className="w-full sm:w-auto flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-amber-500 active:scale-98 transition-all min-h-[44px]"
+                  <Badge
+                    variant={
+                      isFlagged
+                        ? 'danger'
+                        : isApproved
+                        ? 'success'
+                        : 'warning'
+                    }
+                    size="sm"
+                    dot
                   >
-                    Resolve Compliance
-                  </button>
-                ) : po.status === 'PENDING_APPROVAL' ? (
-                  <button
-                    onClick={() => onApprovePo(po.id)}
-                    className="w-full sm:w-auto flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-500 active:scale-98 transition-all min-h-[44px]"
-                  >
-                    Authorize PO
-                  </button>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl">
-                    <Check className="h-4 w-4" /> Approved
-                  </span>
+                    {isFlagged
+                      ? 'SOX Single-Source Hold'
+                      : isApproved
+                      ? 'Approved & Dispatched'
+                      : 'Pending Dual Sign-off'}
+                  </Badge>
+                </div>
+
+                {/* Amount & Terms */}
+                <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] border border-[#DDE3E1] dark:border-[#24423D]">
+                  <div>
+                    <span className="text-[10px] text-[#647A7B] dark:text-[#8BA39F] block">Commitment Value</span>
+                    <span className="text-base sm:text-lg font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">
+                      ${po.amount.toLocaleString()} {po.currency}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-[#647A7B] dark:text-[#8BA39F] block">Commercial Terms</span>
+                    <span className="font-medium text-[#17272A] dark:text-[#EBF1F0]">
+                      {po.paymentTerms}
+                    </span>
+                  </div>
+                </div>
+
+                {/* SOX Exception Alert Banner */}
+                {isFlagged && po.complianceWarning && (
+                  <div className="p-3 rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] border border-[#A22424]/30 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-[#A22424] shrink-0 mt-0.5" />
+                      <p className="text-xs text-[#A22424] dark:text-[#EA5454] leading-relaxed">
+                        {po.complianceWarning}
+                      </p>
+                    </div>
+
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      fullWidth
+                      onClick={() => onResolveFlag(po.id)}
+                      leftIcon={<CheckCircle2 className="h-4 w-4" />}
+                    >
+                      Authorize Form CS-8 Sole-Source Waiver
+                    </Button>
+                  </div>
                 )}
-              </div>
-            </div>
 
-            {/* Compliance Warning Box */}
-            {po.complianceWarning && (
-              <div className="mt-3.5 rounded-xl bg-rose-950/20 border border-rose-500/30 p-3 text-xs text-rose-300 flex items-start gap-2.5">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
-                <div className="flex-1">
-                  <span className="font-bold text-rose-200">SOX Audit Exception: </span>
-                  {po.complianceWarning}
+                {/* Approver Sign-off Details */}
+                <div className="flex items-center justify-between text-[11px] text-[#647A7B] dark:text-[#8BA39F] pt-1">
+                  <span>Signatory Role: {po.approverRole}</span>
+                  <span>Issued: {po.issueDate}</span>
                 </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Action Buttons for Normal Approval */}
+              {!isFlagged && !isApproved && (
+                <div className="pt-2 border-t border-[#DDE3E1] dark:border-[#24423D]">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    onClick={() => onApprovePo(po.id)}
+                    leftIcon={<ShieldCheck className="h-4 w-4" />}
+                  >
+                    Execute Signatory Authorization
+                  </Button>
+                </div>
+              )}
+
+              {isApproved && (
+                <div className="pt-2 border-t border-[#DDE3E1] dark:border-[#24423D] flex items-center justify-between text-xs">
+                  <span className="text-[#1B6A4A] dark:text-[#38B482] font-medium flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Synced to SAP S/4HANA Ledger
+                  </span>
+                  <span className="font-mono text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
+                    Doc: #SAP-{po.poNumber.slice(-4)}
+                  </span>
+                </div>
+              )}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

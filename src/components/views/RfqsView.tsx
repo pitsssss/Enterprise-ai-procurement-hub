@@ -1,362 +1,334 @@
 import React, { useState } from 'react';
+import { RFQ } from '../../types/procurement';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
 import {
+  FileText,
   Plus,
-  FileCheck,
-  Bot,
-  Info,
-  FileSpreadsheet,
-  ChevronRight,
   ChevronDown,
+  ChevronUp,
   Clock,
+  ArrowRight,
+  Package,
   Layers,
   Sparkles,
+  Building,
 } from 'lucide-react';
-import { RFQ } from '../../types/procurement';
 
 interface RfqsViewProps {
-  filteredRfqs: RFQ[];
-  activeRfq: RFQ | undefined;
-  selectedRfqId: string;
-  setSelectedRfqId: (id: string) => void;
-  rfqCategoryFilter: string;
-  setRfqCategoryFilter: (cat: string) => void;
+  rfqs: RFQ[];
+  categoryFilter: string;
+  setCategoryFilter: (cat: string) => void;
   onOpenCreateModal: () => void;
   onEvaluateBids: (rfqId: string) => void;
   onSendPrompt: (prompt: string) => void;
 }
 
-const CATEGORIES = [
-  'ALL',
-  'IT Hardware',
-  'Precision Machining',
-  'Facility Operations',
-  'Logistics',
-  'Raw Materials',
-];
-
 export const RfqsView: React.FC<RfqsViewProps> = ({
-  filteredRfqs,
-  activeRfq,
-  selectedRfqId,
-  setSelectedRfqId,
-  rfqCategoryFilter,
-  setRfqCategoryFilter,
+  rfqs,
+  categoryFilter,
+  setCategoryFilter,
   onOpenCreateModal,
   onEvaluateBids,
   onSendPrompt,
 }) => {
-  // Track expanded mobile cards
-  const [expandedRfqId, setExpandedRfqId] = useState<string | null>(null);
+  const [expandedRfqId, setExpandedRfqId] = useState<string | null>('rfq-101');
+
+  const categories = ['ALL', 'IT Hardware', 'Precision Machining', 'Facility Operations', 'Logistics', 'Raw Materials'];
+
+  const filteredRfqs = rfqs.filter((r) => {
+    if (categoryFilter === 'ALL') return true;
+    return r.category === categoryFilter;
+  });
 
   const toggleExpand = (id: string) => {
-    setExpandedRfqId((prev) => (prev === id ? null : id));
+    setExpandedRfqId(expandedRfqId === id ? null : id);
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
-      {/* Header and Create Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* 1. View Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#DDE3E1] dark:border-[#24423D] pb-4">
         <div>
-          <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white">
-            Requests For Quotation (RFQs)
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
+            RFQs & Capital Requisitions
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Active supplier solicitations, line-item specs, and proposal intake
+          <p className="mt-0.5 text-xs sm:text-sm text-[#647A7B] dark:text-[#8BA39F]">
+            Audit specification sheets, target prices, vendor response quotas, and deadline tracking.
           </p>
         </div>
 
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={onOpenCreateModal}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-500 active:scale-98 transition-all min-h-[44px]"
+          leftIcon={<Plus className="h-4 w-4" />}
         >
-          <Plus className="h-4 w-4" />
-          <span>New Requisition</span>
-        </button>
+          Create Requisition
+        </Button>
       </div>
 
-      {/* Horizontal Category Filter Pills (Mobile + Desktop friendly) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto touch-scroll pb-1 scrollbar-none">
-        {CATEGORIES.map((cat) => (
+      {/* 2. Category Filter Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto touch-scroll scrollbar-none py-1">
+        {categories.map((cat) => (
           <button
             key={cat}
-            onClick={() => setRfqCategoryFilter(cat)}
-            className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all min-h-[38px] ${
-              rfqCategoryFilter === cat
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-                : 'border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850 active:bg-slate-800'
+            onClick={() => setCategoryFilter(cat)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 select-none min-h-[34px] ${
+              categoryFilter === cat
+                ? 'bg-[#173E38] text-white dark:bg-[#2E7A6F] shadow-2xs font-semibold'
+                : 'bg-white dark:bg-[#162B27] text-[#647A7B] dark:text-[#8BA39F] border border-[#DDE3E1] dark:border-[#24423D] hover:bg-[#FAF9F6] dark:hover:bg-[#1D3732]'
             }`}
           >
-            {cat === 'ALL' ? 'All Categories' : cat}
+            {cat === 'ALL' ? 'All Portfolios' : cat}
           </button>
         ))}
       </div>
 
-      {/* ========================================================= */}
-      {/* 1. MOBILE RFQ CARDS WITH PROGRESSIVE DISCLOSURE (< md) */}
-      {/* ========================================================= */}
-      <div className="md:hidden space-y-3">
-        {filteredRfqs.length === 0 ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-slate-400">
-            <FileSpreadsheet className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-            <p className="text-xs">No RFQs match the selected filter.</p>
-          </div>
-        ) : (
-          filteredRfqs.map((rfq) => {
-            const isExpanded = expandedRfqId === rfq.id;
-            const isSelected = selectedRfqId === rfq.id;
-
-            return (
-              <div
-                key={rfq.id}
-                className={`rounded-2xl border p-4 transition-all ${
-                  isSelected
-                    ? 'border-indigo-500/60 bg-slate-900/95 ring-1 ring-indigo-500/30 shadow-md'
-                    : 'border-slate-800 bg-slate-900/80'
-                }`}
-              >
-                {/* Header Row */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-indigo-400">
-                      {rfq.rfqNumber}
-                    </span>
-                    <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-300">
-                      {rfq.category}
-                    </span>
-                  </div>
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
-                      rfq.status === 'EVALUATION'
-                        ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                        : rfq.status === 'AWARDED'
-                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                        : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300'
-                    }`}
-                  >
-                    {rfq.status.replace('_', ' ')}
-                  </span>
-                </div>
-
-                {/* Title & Department */}
-                <h2 className="mt-2 text-sm font-bold text-white leading-snug">{rfq.title}</h2>
-                <p className="text-xs text-slate-400 mt-0.5">{rfq.department}</p>
-
-                {/* Key Numbers Grid */}
-                <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-slate-950/70 p-3 border border-slate-800 text-xs">
-                  <div>
-                    <span className="text-[11px] text-slate-400">Target Budget</span>
-                    <p className="font-mono font-bold text-white text-sm">
-                      ${rfq.budget.toLocaleString()} USD
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-slate-400">Bids Received</span>
-                    <p className="font-bold text-emerald-400 text-sm">
-                      {rfq.bidsReceivedCount}{' '}
-                      <span className="text-slate-400 text-xs font-normal">
-                        / {rfq.invitedVendorsCount} invited
-                      </span>
-                    </p>
-                  </div>
-                  <div className="col-span-2 pt-1 border-t border-slate-800/80 flex items-center gap-1.5 text-[11px] text-slate-400">
-                    <Clock className="h-3.5 w-3.5 text-slate-500" />
-                    <span>Submission Deadline: {rfq.deadline}</span>
-                  </div>
-                </div>
-
-                {/* Expandable Line-Items Accordion */}
-                <div className="mt-3 border-t border-slate-800 pt-2.5">
-                  <button
-                    onClick={() => toggleExpand(rfq.id)}
-                    className="flex w-full items-center justify-between py-1 text-xs font-semibold text-slate-300 hover:text-white"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Layers className="h-3.5 w-3.5 text-indigo-400" />
-                      <span>{rfq.lineItems.length} Verified Line Items</span>
-                    </span>
-                    <ChevronDown
-                      className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
-                        isExpanded ? 'rotate-180 text-indigo-400' : ''
-                      }`}
-                    />
-                  </button>
-
-                  {isExpanded && (
-                    <div className="mt-2.5 space-y-2 animate-in fade-in duration-150">
-                      {rfq.lineItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className="rounded-xl border border-slate-800 bg-slate-950/90 p-2.5 text-[11px]"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono font-bold text-indigo-300">{item.sku}</span>
-                            <span className="font-semibold text-white">
-                              {item.quantity} {item.unit}
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-slate-300 text-[11px]">{item.description}</p>
-                          <div className="mt-2 flex items-center justify-between text-slate-400 border-t border-slate-850 pt-1.5">
-                            <span>Target: ${item.targetPrice.toLocaleString()} / unit</span>
-                            <span className="font-semibold text-white">
-                              Total: ${(item.quantity * item.targetPrice).toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-
-                      {rfq.policyNotes && (
-                        <div className="rounded-xl bg-indigo-950/30 border border-indigo-500/20 p-2.5 text-[11px] text-indigo-300 flex items-start gap-2">
-                          <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 text-indigo-400" />
-                          <span>{rfq.policyNotes}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Primary Action Button */}
-                <div className="mt-3.5 pt-2.5 border-t border-slate-800 flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedRfqId(rfq.id);
-                      onEvaluateBids(rfq.id);
-                    }}
-                    className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white hover:bg-indigo-500 active:scale-98 transition-all min-h-[44px]"
-                  >
-                    <span>Evaluate Bids Matrix</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {/* ========================================================= */}
-      {/* 2. DESKTOP RFQ TABLE (>= md screens) */}
-      {/* ========================================================= */}
-      <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm">
+      {/* 3. High-Density Desktop Data Table (>= md screens) */}
+      <div className="hidden md:block rounded-xl border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#11211E] overflow-hidden shadow-xs">
         <table className="w-full text-left text-xs">
-          <thead className="border-b border-slate-800 bg-slate-950/80 text-slate-400 uppercase tracking-wider text-[11px]">
+          <thead className="border-b border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6] dark:bg-[#162B27] font-semibold text-[#647A7B] dark:text-[#8BA39F]">
             <tr>
-              <th className="px-5 py-3.5">Reference</th>
-              <th className="px-5 py-3.5">Title & Department</th>
-              <th className="px-5 py-3.5">Target Budget</th>
-              <th className="px-5 py-3.5">Bids Received</th>
-              <th className="px-5 py-3.5">Deadline</th>
-              <th className="px-5 py-3.5">Status</th>
-              <th className="px-5 py-3.5 text-right">Actions</th>
+              <th className="py-3 px-4">RFQ Ref / Title</th>
+              <th className="py-3 px-4">Category & Department</th>
+              <th className="py-3 px-4 text-right">Budget Limit</th>
+              <th className="py-3 px-4 text-center">Bids Received</th>
+              <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800 text-slate-200">
-            {filteredRfqs.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-500">
-                  <FileSpreadsheet className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-                  No RFQs found matching the selected filter.
-                </td>
-              </tr>
-            ) : (
-              filteredRfqs.map((rfq) => (
-                <tr
-                  key={rfq.id}
-                  onClick={() => setSelectedRfqId(rfq.id)}
-                  className={`hover:bg-slate-800/40 transition-colors cursor-pointer ${
-                    rfq.id === selectedRfqId ? 'bg-indigo-950/20' : ''
-                  }`}
-                >
-                  <td className="px-5 py-4 font-mono font-bold text-indigo-400">
-                    {rfq.rfqNumber}
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="font-semibold text-white">{rfq.title}</div>
-                    <div className="text-[11px] text-slate-400">
-                      {rfq.category} • {rfq.department}
+          <tbody className="divide-y divide-[#DDE3E1] dark:divide-[#24423D]">
+            {filteredRfqs.map((rfq) => (
+              <React.Fragment key={rfq.id}>
+                <tr className="hover:bg-[#FAF9F6] dark:hover:bg-[#162B27]/50 transition-colors">
+                  <td className="py-3.5 px-4">
+                    <div className="flex items-start gap-2">
+                      <button
+                        onClick={() => toggleExpand(rfq.id)}
+                        className="mt-0.5 text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0]"
+                      >
+                        {expandedRfqId === rfq.id ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                      <div>
+                        <span className="font-mono text-xs font-bold text-[#173E38] dark:text-[#4EA89A]">
+                          {rfq.rfqNumber}
+                        </span>
+                        <p className="font-semibold text-[#17272A] dark:text-[#EBF1F0] mt-0.5">
+                          {rfq.title}
+                        </p>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4 font-mono">
-                    <div className="font-semibold">${rfq.budget.toLocaleString()} USD</div>
+                  <td className="py-3.5 px-4">
+                    <Badge variant="default" size="sm">{rfq.category}</Badge>
+                    <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F] mt-1">
+                      {rfq.department}
+                    </p>
                   </td>
-                  <td className="px-5 py-4">
-                    <span className="font-bold text-white">{rfq.bidsReceivedCount}</span>
-                    <span className="text-slate-400"> / {rfq.invitedVendorsCount} invited</span>
-                  </td>
-                  <td className="px-5 py-4 text-slate-400">{rfq.deadline}</td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
-                        rfq.status === 'EVALUATION'
-                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                          : rfq.status === 'AWARDED'
-                          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                          : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300'
-                      }`}
-                    >
-                      {rfq.status.replace('_', ' ')}
+                  <td className="py-3.5 px-4 text-right font-semibold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">
+                    ${rfq.budget.toLocaleString()}
+                    <span className="block text-[10px] text-[#647A7B] dark:text-[#8BA39F] font-normal">
+                      Est. ${rfq.estTotalValue.toLocaleString()}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-right space-x-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedRfqId(rfq.id);
-                        onEvaluateBids(rfq.id);
-                      }}
-                      className="rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white"
+                  <td className="py-3.5 px-4 text-center">
+                    <span className="inline-flex items-center gap-1 font-semibold text-[#173E38] dark:text-[#4EA89A] tabular-nums">
+                      {rfq.bidsReceivedCount} / {rfq.invitedVendorsCount}
+                    </span>
+                    <span className="block text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
+                      Quotes Logged
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <Badge
+                      variant={
+                        rfq.status === 'EVALUATION'
+                          ? 'accent'
+                          : rfq.status === 'OPEN_FOR_BIDS'
+                          ? 'primary'
+                          : 'success'
+                      }
+                      size="sm"
+                      dot
                     >
-                      Evaluate Bids
-                    </button>
+                      {rfq.status === 'EVALUATION' ? 'Evaluation Active' : rfq.status}
+                    </Badge>
+                    <span className="block text-[10px] text-[#647A7B] dark:text-[#8BA39F] mt-0.5">
+                      Deadline: {rfq.deadline}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onEvaluateBids(rfq.id)}
+                      >
+                        Bid Matrix
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onSendPrompt(`Analyze price variance and policy compliance for ${rfq.rfqNumber}: ${rfq.title}`)}
+                      >
+                        Copilot
+                      </Button>
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
+
+                {/* Collapsible Line Items Accordion for Desktop */}
+                {expandedRfqId === rfq.id && (
+                  <tr className="bg-[#FAF9F6]/80 dark:bg-[#162B27]/40">
+                    <td colSpan={6} className="p-4 border-t border-[#DDE3E1] dark:border-[#24423D]">
+                      <div className="rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#11211E] p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-[#17272A] dark:text-[#EBF1F0] flex items-center gap-2">
+                            <Package className="h-4 w-4 text-[#C17C43] dark:text-[#D48D55]" />
+                            <span>Specification Line Items ({rfq.lineItems.length} Verified SKUs)</span>
+                          </p>
+                          <span className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                            Created: {rfq.createdAt}
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-[#FAF9F6] dark:bg-[#162B27] text-[#647A7B] dark:text-[#8BA39F]">
+                              <tr>
+                                <th className="p-2">SKU Code</th>
+                                <th className="p-2">Component Description</th>
+                                <th className="p-2 text-right">Quantity</th>
+                                <th className="p-2">Unit</th>
+                                <th className="p-2 text-right">Target Unit Price</th>
+                                <th className="p-2 text-right">Total Baseline</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#DDE3E1] dark:divide-[#24423D]">
+                              {rfq.lineItems.map((item) => (
+                                <tr key={item.id}>
+                                  <td className="p-2 font-mono font-medium text-[#173E38] dark:text-[#4EA89A]">{item.sku}</td>
+                                  <td className="p-2 text-[#17272A] dark:text-[#EBF1F0]">{item.description}</td>
+                                  <td className="p-2 text-right tabular-nums">{item.quantity.toLocaleString()}</td>
+                                  <td className="p-2 text-[#647A7B] dark:text-[#8BA39F]">{item.unit}</td>
+                                  <td className="p-2 text-right font-mono tabular-nums">${item.targetPrice.toLocaleString()}</td>
+                                  <td className="p-2 text-right font-mono font-semibold tabular-nums">
+                                    ${(item.quantity * item.targetPrice).toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {rfq.policyNotes && (
+                          <div className="rounded bg-[#FAF9F6] dark:bg-[#162B27] p-2.5 text-[11px] text-[#647A7B] dark:text-[#8BA39F] border border-[#DDE3E1] dark:border-[#24423D]">
+                            <strong className="text-[#17272A] dark:text-[#EBF1F0]">Policy Annotation: </strong>
+                            {rfq.policyNotes}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* ========================================================= */}
-      {/* 3. DESKTOP SPECIFICATION INSPECTOR */}
-      {/* ========================================================= */}
-      {activeRfq && (
-        <div className="hidden md:block rounded-2xl border border-slate-800 bg-slate-900 p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2">
-              <FileCheck className="h-5 w-5 text-indigo-400" />
-              <h3 className="text-sm font-bold text-white">
-                Line-Item Specification Sheet: {activeRfq.rfqNumber}
-              </h3>
-            </div>
-            <button
-              onClick={() => onSendPrompt(`Analyze specification compliance for ${activeRfq.rfqNumber}`)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300"
-            >
-              <Bot className="h-4 w-4" />
-              <span>Run AI Spec Feasibility</span>
-            </button>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {activeRfq.lineItems.map((item) => (
-              <div key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-indigo-300">{item.sku}</span>
-                  <span className="text-xs font-semibold text-white">
-                    {item.quantity} {item.unit}
-                  </span>
+      {/* 4. Responsive Mobile Cards (< md screens) */}
+      <div className="md:hidden space-y-3">
+        {filteredRfqs.map((rfq) => {
+          const isExpanded = expandedRfqId === rfq.id;
+          return (
+            <Card key={rfq.id} padding="sm" className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs font-bold text-[#173E38] dark:text-[#4EA89A]">
+                      {rfq.rfqNumber}
+                    </span>
+                    <Badge variant="default" size="sm">{rfq.category}</Badge>
+                  </div>
+                  <h3 className="mt-1 font-semibold text-xs text-[#17272A] dark:text-[#EBF1F0]">
+                    {rfq.title}
+                  </h3>
                 </div>
-                <p className="mt-1 text-xs text-slate-300">{item.description}</p>
-                <div className="mt-3 flex items-center justify-between text-xs text-slate-400 border-t border-slate-800 pt-2">
-                  <span>Target: ${item.targetPrice.toLocaleString()} / unit</span>
-                  <span className="font-semibold text-slate-200">
-                    Line Total: ${(item.quantity * item.targetPrice).toLocaleString()} USD
-                  </span>
+
+                <Badge
+                  variant={rfq.status === 'EVALUATION' ? 'accent' : 'primary'}
+                  size="sm"
+                  dot
+                >
+                  {rfq.status === 'EVALUATION' ? 'Evaluation' : rfq.status}
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-[#DDE3E1] dark:border-[#24423D]">
+                <div>
+                  <span className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">Budget Ceiling</span>
+                  <p className="font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">
+                    ${rfq.budget.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">Bids Received</span>
+                  <p className="font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]">
+                    {rfq.bidsReceivedCount} / {rfq.invitedVendorsCount} Vendors
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  onClick={() => toggleExpand(rfq.id)}
+                  className="flex items-center gap-1 text-[11px] font-medium text-[#173E38] dark:text-[#4EA89A]"
+                >
+                  <span>{isExpanded ? 'Hide Line Items' : `View ${rfq.lineItems.length} SKUs`}</span>
+                  {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </button>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => onEvaluateBids(rfq.id)}
+                  rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
+                >
+                  Bid Matrix
+                </Button>
+              </div>
+
+              {/* Mobile Accordion */}
+              {isExpanded && (
+                <div className="mt-2 space-y-2 border-t border-[#DDE3E1] dark:border-[#24423D] pt-2 text-xs">
+                  {rfq.lineItems.map((item) => (
+                    <div key={item.id} className="p-2 rounded bg-[#FAF9F6] dark:bg-[#162B27] border border-[#DDE3E1] dark:border-[#24423D]">
+                      <div className="flex justify-between font-mono text-[11px]">
+                        <span className="font-semibold text-[#173E38] dark:text-[#4EA89A]">{item.sku}</span>
+                        <span className="tabular-nums font-bold">${item.targetPrice.toLocaleString()} / {item.unit}</span>
+                      </div>
+                      <p className="text-[11px] text-[#34484B] dark:text-[#C2D3CF] mt-0.5">{item.description}</p>
+                      <div className="mt-1 flex justify-between text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
+                        <span>Quantity: {item.quantity}</span>
+                        <span className="tabular-nums font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                          Line Total: ${(item.quantity * item.targetPrice).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 };

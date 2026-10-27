@@ -1,15 +1,21 @@
 import React, { useRef, useEffect } from 'react';
+import { ChatMessage } from '../types/procurement';
+import { Badge } from './ui/Badge';
+import { Button } from './ui/Button';
 import {
-  Bot,
   X,
   Send,
-  RefreshCw,
-  ChevronRight,
-  Zap,
-  ArrowLeft,
   Sparkles,
+  Bot,
+  User,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  HelpCircle,
+  FileText,
+  Zap,
 } from 'lucide-react';
-import { ChatMessage } from '../types/procurement';
 
 interface AiCopilotDrawerProps {
   isOpen: boolean;
@@ -17,9 +23,9 @@ interface AiCopilotDrawerProps {
   chatMessages: ChatMessage[];
   isAiTyping: boolean;
   chatInput: string;
-  setChatInput: (val: string) => void;
+  setChatInput: (input: string) => void;
   onSendPrompt: (promptText?: string) => void;
-  onExecuteSuggestedAction: (action?: ChatMessage['suggestedAction']) => void;
+  onExecuteSuggestedAction: (action: ChatMessage['suggestedAction']) => void;
   useLiveGemini: boolean;
   setUseLiveGemini: (val: boolean) => void;
 }
@@ -36,214 +42,188 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({
   useLiveGemini,
   setUseLiveGemini,
 }) => {
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages, isAiTyping, isOpen]);
 
   if (!isOpen) return null;
 
+  const quickPrompts = [
+    'Compare Apex Data vs HyperScale lead-time trade-off',
+    'Audit open purchase orders for SOX Section 404 holds',
+    'Recommend counter-offer target for RFQ-2025-0892',
+    'Evaluate supplier ESG ratings across Tier-1 vendors',
+  ];
+
   return (
-    <>
-      {/* Mobile Backdrop Overlay (< lg) */}
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      role="dialog"
+      aria-modal="true"
+    >
       <div
-        className="lg:hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Main Drawer Shell: Fullscreen on mobile, sidebar on desktop */}
-      <aside className="fixed inset-0 lg:static z-50 lg:z-auto flex w-full lg:w-96 flex-col border-l border-slate-800 bg-slate-950 lg:bg-slate-900/95 backdrop-blur-xl shrink-0 h-full animate-in slide-in-from-right-4 duration-200">
-        {/* Copilot Header */}
-        <div className="flex h-14 sm:h-16 items-center justify-between border-b border-slate-800/90 px-3.5 sm:px-4 shrink-0 bg-slate-900">
-          <div className="flex items-center gap-2">
-            {/* Back button on mobile */}
-            <button
-              onClick={onClose}
-              className="lg:hidden p-2 rounded-xl text-slate-300 hover:bg-slate-800 active:bg-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center -ml-1"
-              aria-label="Back to workspace"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600/30 text-indigo-400 border border-indigo-500/30">
-              <Bot className="h-4.5 w-4.5" />
+        className="w-full md:w-[460px] h-full bg-[#F6F5F1] dark:bg-[#0B1614] border-l border-[#DDE3E1] dark:border-[#24423D] flex flex-col shadow-2xl animate-in slide-in-from-right duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 1. Executive Copilot Header */}
+        <div className="flex h-16 items-center justify-between border-b border-[#DDE3E1] dark:border-[#24423D] px-5 shrink-0 bg-white dark:bg-[#11211E]">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#173E38] text-white shadow-2xs">
+              <Sparkles className="h-4 w-4 text-[#C17C43] dark:text-[#D48D55]" />
             </div>
             <div>
-              <h2 className="text-xs sm:text-sm font-bold text-white">AI Sourcing Copilot</h2>
-              <p className="text-[10px] text-slate-400">
-                {useLiveGemini ? 'Gemini 3.8 Flash (Server)' : 'Deterministic Simulation'}
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-xs sm:text-sm font-bold text-[#17272A] dark:text-[#EBF1F0]">
+                  Synthetix Sourcing Copilot
+                </h2>
+                <Badge variant="primary" size="sm">Gemini 3.8 Flash</Badge>
+              </div>
+              <p className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
+                Fiduciary Strategic Sourcing Intelligence
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Close AI Copilot"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Gemini Mode Toggle Bar */}
-        <div className="border-b border-slate-800/80 bg-slate-900/70 p-2.5 sm:p-3 text-[11px] space-y-1.5 shrink-0">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-400 font-medium">Inference Engine:</span>
-            <div className="flex items-center gap-1 rounded-xl bg-slate-850 p-0.5 border border-slate-700">
-              <button
-                type="button"
-                onClick={() => setUseLiveGemini(false)}
-                className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-all ${
-                  !useLiveGemini
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Offline Presets
-              </button>
-              <button
-                type="button"
-                onClick={() => setUseLiveGemini(true)}
-                className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-all ${
-                  useLiveGemini
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Gemini Live
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
-            <span className="flex items-center gap-1 text-emerald-400">
-              <Zap className="h-3 w-3" />
-              <span>Real-time Policy Verification</span>
-            </span>
-            <span className="text-indigo-400 font-mono font-semibold">v4.2</span>
-          </div>
-        </div>
-
-        {/* Chat Transcript Area */}
-        <div className="flex-1 overflow-y-auto touch-scroll p-3.5 sm:p-4 space-y-3.5 text-xs">
-          {chatMessages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+          <div className="flex items-center gap-2">
+            {/* Live Model Toggle */}
+            <button
+              onClick={() => setUseLiveGemini(!useLiveGemini)}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold border transition-all ${
+                useLiveGemini
+                  ? 'border-[#173E38]/30 bg-[#173E38]/10 text-[#173E38] dark:border-[#2E7A6F]/40 dark:text-[#4EA89A]'
+                  : 'border-[#DDE3E1] bg-[#FAF9F6] text-[#647A7B] dark:border-[#24423D] dark:bg-[#162B27] dark:text-[#8BA39F]'
+              }`}
+              title="Toggle Live Server-Side Gemini API vs Deterministic Heuristics"
             >
-              <div
-                className={`max-w-[92%] sm:max-w-[85%] rounded-2xl p-3.5 leading-relaxed shadow-sm ${
-                  msg.sender === 'user'
-                    ? 'bg-indigo-600 text-white rounded-br-sm'
-                    : 'border border-slate-800 bg-slate-900 text-slate-200 rounded-bl-sm'
-                }`}
-              >
-                {msg.sender === 'assistant' && (
-                  <div className="mb-2 flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-800 pb-1">
-                    <span className="font-bold text-indigo-400 flex items-center gap-1">
-                      <Sparkles className="h-3 w-3" />
-                      {msg.mode === 'GEMINI_LIVE' ? 'GEMINI 3.8 FLASH' : 'SIMULATED SOURCING AI'}
-                    </span>
-                  </div>
-                )}
+              <Zap className="h-3 w-3" />
+              <span>{useLiveGemini ? 'Live AI' : 'Offline'}</span>
+            </button>
 
-                <div className="whitespace-pre-line text-xs sm:text-[13px] leading-relaxed">
-                  {msg.content}
+            <button
+              onClick={onClose}
+              className="text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] p-1 rounded-md"
+              aria-label="Close Copilot"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* 2. Messages Stream */}
+        <div className="flex-1 overflow-y-auto touch-scroll p-4 space-y-4">
+          {chatMessages.map((msg) => {
+            const isUser = msg.sender === 'user';
+            return (
+              <div
+                key={msg.id}
+                className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} space-y-1.5`}
+              >
+                <div className="flex items-center gap-1.5 text-[10px] text-[#647A7B] dark:text-[#8BA39F] px-1">
+                  <span>{isUser ? 'Sarah Chen (Director)' : 'Synthetix Copilot'}</span>
+                  <span>•</span>
+                  <span>{msg.timestamp}</span>
                 </div>
 
-                {/* Citations Footer */}
-                {msg.citations && msg.citations.length > 0 && (
-                  <div className="mt-2.5 border-t border-slate-800/80 pt-2 text-[10px] text-slate-400">
-                    <span className="font-semibold text-slate-400">Governance Evidence:</span>
-                    <ul className="mt-1 space-y-0.5 list-disc list-inside text-indigo-300">
-                      {msg.citations.map((c, i) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <div
+                  className={`rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed max-w-[92%] shadow-2xs ${
+                    isUser
+                      ? 'bg-[#173E38] text-white dark:bg-[#2E7A6F] rounded-br-xs'
+                      : 'bg-white dark:bg-[#11211E] text-[#17272A] dark:text-[#EBF1F0] border border-[#DDE3E1] dark:border-[#24423D] rounded-bl-xs'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
 
-                {/* In-Message Interactive Action CTA */}
-                {msg.suggestedAction && (
-                  <button
-                    onClick={() => onExecuteSuggestedAction(msg.suggestedAction)}
-                    className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-500/20 border border-indigo-400/30 px-3 py-2.5 text-xs font-bold text-indigo-200 hover:bg-indigo-500/30 active:scale-98 transition-all min-h-[44px]"
-                  >
-                    <span>{msg.suggestedAction.label}</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                )}
+                  {/* Governance Citations */}
+                  {msg.citations && msg.citations.length > 0 && (
+                    <div className="mt-3 pt-2.5 border-t border-[#DDE3E1] dark:border-[#24423D] flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] text-[#647A7B] dark:text-[#8BA39F] uppercase font-semibold">
+                        Policy Citations:
+                      </span>
+                      {msg.citations.map((cite, idx) => (
+                        <span
+                          key={idx}
+                          className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-[#FAF9F6] dark:bg-[#162B27] text-[#173E38] dark:text-[#4EA89A] border border-[#DDE3E1] dark:border-[#24423D]"
+                        >
+                          {cite}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Suggested Procurement Actions */}
+                  {msg.suggestedAction && (
+                    <div className="mt-3 pt-2.5 border-t border-[#DDE3E1] dark:border-[#24423D]">
+                      <Button
+                        variant="accent"
+                        size="sm"
+                        fullWidth
+                        onClick={() => onExecuteSuggestedAction(msg.suggestedAction)}
+                        rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
+                      >
+                        {msg.suggestedAction.label}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <span className="mt-1 px-1 text-[10px] text-slate-500">{msg.timestamp}</span>
-            </div>
-          ))}
+            );
+          })}
 
           {isAiTyping && (
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900 p-3 text-slate-400 text-xs">
-              <RefreshCw className="h-4 w-4 animate-spin text-indigo-400" />
-              <span>Scanning compliance rulebooks & supplier data...</span>
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-white dark:bg-[#11211E] border border-[#DDE3E1] dark:border-[#24423D] text-xs text-[#647A7B] dark:text-[#8BA39F] w-fit">
+              <span className="h-2 w-2 rounded-full bg-[#173E38] dark:bg-[#4EA89A] animate-ping" />
+              <span>Reconciling pipeline schema & evaluating proposals...</span>
             </div>
           )}
-          <div ref={chatEndRef} />
+
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Suggested Prompts Horizontal Chips */}
-        <div className="border-t border-slate-800 bg-slate-950 p-2.5 shrink-0">
-          <p className="mb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Suggested Inquiries
-          </p>
-          <div className="flex items-center gap-1.5 overflow-x-auto touch-scroll pb-1 scrollbar-none">
+        {/* 3. Quick Prompt Suggestions */}
+        <div className="px-4 py-2 border-t border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#11211E] overflow-x-auto touch-scroll scrollbar-none flex items-center gap-1.5">
+          {quickPrompts.map((q, idx) => (
             <button
-              onClick={() => onSendPrompt('Compare bids for RFQ-2025-0891 and give me the best trade-off')}
-              className="shrink-0 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-[11px] font-semibold text-slate-300 hover:border-indigo-500 hover:text-white active:bg-slate-800 transition-colors min-h-[36px]"
+              key={idx}
+              onClick={() => onSendPrompt(q)}
+              className="px-2.5 py-1 rounded-md bg-[#FAF9F6] dark:bg-[#162B27] border border-[#DDE3E1] dark:border-[#24423D] text-[11px] text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] hover:bg-white dark:hover:bg-[#1D3732] shrink-0 transition-colors"
             >
-              ⚖️ Compare Bids
+              {q}
             </button>
-            <button
-              onClick={() => onSendPrompt('Audit PO-2025-10493 compliance flag')}
-              className="shrink-0 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-[11px] font-semibold text-slate-300 hover:border-indigo-500 hover:text-white active:bg-slate-800 transition-colors min-h-[36px]"
-            >
-              🚨 Check PO Flag
-            </button>
-            <button
-              onClick={() => onSendPrompt('Show cost savings and price benchmarking')}
-              className="shrink-0 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-[11px] font-semibold text-slate-300 hover:border-indigo-500 hover:text-white active:bg-slate-800 transition-colors min-h-[36px]"
-            >
-              💰 Spend Analytics
-            </button>
-          </div>
+          ))}
         </div>
 
-        {/* User Chat Input Box with Safe-Area Insets */}
-        <div className="border-t border-slate-800 p-3 shrink-0 bg-slate-900 pb-safe">
+        {/* 4. Chat Input Bar */}
+        <div className="p-3.5 bg-white dark:bg-[#11211E] border-t border-[#DDE3E1] dark:border-[#24423D] pb-safe">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               onSendPrompt();
             }}
-            className="relative flex items-center"
+            className="flex items-center gap-2"
           >
             <input
               type="text"
-              placeholder="Ask Copilot about bids, SOX rules..."
+              placeholder="Ask Copilot about bids, lead-time penalties, or SOX holds..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-850 py-2.5 pl-3.5 pr-12 text-xs sm:text-sm text-slate-200 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
+              className="flex-1 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6] dark:bg-[#162B27] px-3 py-2.5 text-xs sm:text-sm text-[#17272A] dark:text-[#EBF1F0] placeholder-[#92A4A3] focus:border-[#173E38] dark:focus:border-[#2E7A6F] focus:outline-none"
             />
-            <button
+            <Button
               type="submit"
-              disabled={isAiTyping || !chatInput.trim()}
-              className="absolute right-1.5 rounded-lg bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-40 active:scale-95 transition-all min-h-[38px] min-w-[38px] flex items-center justify-center shadow-md shadow-indigo-600/30"
-              aria-label="Send message"
+              variant="primary"
+              size="md"
+              disabled={!chatInput.trim() || isAiTyping}
+              leftIcon={<Send className="h-4 w-4" />}
             >
-              <Send className="h-4 w-4" />
-            </button>
+              Send
+            </Button>
           </form>
         </div>
-      </aside>
-    </>
+      </div>
+    </div>
   );
 };

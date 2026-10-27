@@ -1,10 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   CheckCircle2,
   Bot,
   Search,
   Plus,
   Sparkles,
+  Sun,
+  Moon,
+  Globe,
+  Bell,
+  Sliders,
+  User,
+  ShieldAlert,
 } from 'lucide-react';
 
 import { RFQ, VendorBid, Vendor, PurchaseOrder, ChatMessage, RFQStatus } from './types/procurement';
@@ -18,10 +25,40 @@ import { RfqsView } from './components/views/RfqsView';
 import { BidsView } from './components/views/BidsView';
 import { VendorsView } from './components/views/VendorsView';
 import { PosView } from './components/views/PosView';
+import { OrganizationSettingsView } from './components/views/OrganizationSettingsView';
+import { UserProfileView } from './components/views/UserProfileView';
+import { NotificationsDrawer } from './components/views/NotificationsDrawer';
+import { LandingPage } from './components/public/LandingPage';
+import { AuthModal, AuthMode } from './components/public/AuthModal';
+import { ContactSalesModal } from './components/public/ContactSalesModal';
 import { CreateRfqModal } from './components/modals/CreateRfqModal';
 import { AwardModal } from './components/modals/AwardModal';
+import { Button } from './components/ui/Button';
+import { Badge } from './components/ui/Badge';
 
 export default function App() {
+  // Public vs Workspace View Mode
+  const [viewMode, setViewMode] = useState<'workspace' | 'public'>('workspace');
+
+  // Theme State (Default Warm Canvas Light; supports Deep Forest Dark)
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    return document.documentElement.classList.contains('dark');
+  });
+
+  const toggleTheme = () => {
+    setIsDark((prev) => {
+      const next = !prev;
+      if (next) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+      }
+      return next;
+    });
+  };
+
   // Core Application Data State
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [rfqs, setRfqs] = useState<RFQ[]>(INITIAL_RFQS);
@@ -40,6 +77,10 @@ export default function App() {
   const [isCreateRfqModalOpen, setIsCreateRfqModalOpen] = useState(false);
   const [isAwardModalOpen, setIsAwardModalOpen] = useState(false);
   const [selectedBidForAward, setSelectedBidForAward] = useState<VendorBid | null>(null);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('signin');
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ title: string; desc: string; type: 'success' | 'info' | 'warn' } | null>(null);
 
   // New RFQ Form State
@@ -48,7 +89,7 @@ export default function App() {
   const [newRfqBudget, setNewRfqBudget] = useState(150000);
   const [newRfqDept, setNewRfqDept] = useState('Infrastructure Engineering');
 
-  // AI Copilot State (Default closed on mobile, open on desktop)
+  // AI Copilot State
   const [copilotDrawerOpen, setCopilotDrawerOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
@@ -58,194 +99,229 @@ export default function App() {
       id: 'm-1',
       sender: 'assistant',
       timestamp: '09:15 AM',
+      content:
+        'Welcome to Synthetix Sourcing. I have completed ingestion of active pipeline spend ($1.025M USD) across 4 requisitions. Note that PO-2025-0720 ($340,000) has an active SOX Section 404 hold requiring a Form CS-8 Sole-Source Justification waiver.',
       mode: 'SIMULATED_PRESET',
-      content: 'Welcome to Synthetix Sourcing. I continuously monitor open RFQs, evaluate supplier bids against SLA/ESG benchmarks, and flag SOX delegation compliance risks.\n\nTry asking: "Compare bids for RFQ-2025-0891" or "Audit compliance on PO-2025-10493".',
-      citations: ['Corp Procurement Manual v4.2', 'SOX Compliance Rulebook 2025'],
+      citations: ['[SOX-Sec-404]', '[FAR-52.204-24]'],
+      suggestedAction: {
+        label: 'Inspect Flagged PO Exceptions',
+        actionType: 'NAVIGATE_TAB',
+        payload: 'pos',
+      },
     },
   ]);
 
-  // Show Auto-Dismiss Toast
   const showToast = (title: string, desc: string, type: 'success' | 'info' | 'warn' = 'success') => {
     setToastMessage({ title, desc, type });
     setTimeout(() => {
       setToastMessage(null);
-    }, 4500);
+    }, 4000);
   };
 
-  // Active RFQ object for vendor comparison
-  const activeRfq = useMemo(() => {
-    return rfqs.find((r) => r.id === selectedRfqId) || rfqs[0] || INITIAL_RFQS[0];
-  }, [rfqs, selectedRfqId]);
+  // Keyboard shortcut for Command/Ctrl + K (Quick Search / Copilot)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCopilotDrawerOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-  // Filtered RFQs
+  // Filtered RFQs based on search and category
   const filteredRfqs = useMemo(() => {
     return rfqs.filter((r) => {
       const matchesSearch =
         r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.rfqNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.department.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = rfqCategoryFilter === 'ALL' || r.category === rfqCategoryFilter;
       return matchesSearch && matchesCategory;
     });
   }, [rfqs, searchQuery, rfqCategoryFilter]);
 
-  // Filtered Vendors
+  // Active RFQ object
+  const activeRfq = useMemo(() => {
+    return rfqs.find((r) => r.id === selectedRfqId) || rfqs[0];
+  }, [rfqs, selectedRfqId]);
+
+  // Bids for the active RFQ
+  const activeBidsForCurrentRfq = useMemo(() => {
+    if (!activeRfq) return [];
+    return bids.filter((b) => b.rfqId === activeRfq.id);
+  }, [bids, activeRfq]);
+
+  // Filtered Vendors based on search and tier
   const filteredVendors = useMemo(() => {
     return vendors.filter((v) => {
       const matchesSearch =
         v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.category.toLowerCase().includes(searchQuery.toLowerCase());
+        v.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.country.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTier = vendorTierFilter === 'ALL' || v.tier === vendorTierFilter;
       return matchesSearch && matchesTier;
     });
   }, [vendors, searchQuery, vendorTierFilter]);
 
-  // Key Calculations
-  const totalPipelineSpend = useMemo(() => rfqs.reduce((acc, c) => acc + c.estTotalValue, 0), [rfqs]);
-  const flaggedPosCount = useMemo(() => pos.filter((p) => p.status === 'FLAGGED').length, [pos]);
-  const activeBidsForCurrentRfq = useMemo(
-    () => bids.filter((b) => b.rfqId === activeRfq?.id),
-    [bids, activeRfq]
-  );
+  // Calculated Metrics
+  const totalPipelineSpend = useMemo(() => {
+    return rfqs.reduce((acc, curr) => acc + curr.budget, 0);
+  }, [rfqs]);
 
-  // AI Chat Submission
+  const flaggedPosCount = useMemo(() => {
+    return pos.filter((p) => p.status === 'FLAGGED').length;
+  }, [pos]);
+
+  const openRfqsCount = useMemo(() => {
+    return rfqs.filter((r) => r.status === 'OPEN_FOR_BIDS' || r.status === 'EVALUATION').length;
+  }, [rfqs]);
+
+  // AI Chat Handler
   const handleSendPrompt = async (promptText?: string) => {
     const text = promptText || chatInput;
-    if (!text.trim() || isAiTyping) return;
-
-    // Open Copilot when a prompt is dispatched
-    setCopilotDrawerOpen(true);
+    if (!text.trim()) return;
 
     const userMsg: ChatMessage = {
-      id: `usr-${Date.now()}`,
+      id: `u-${Date.now()}`,
       sender: 'user',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      mode: 'SIMULATED_PRESET',
       content: text,
+      mode: 'SIMULATED_PRESET',
     };
 
     setChatMessages((prev) => [...prev, userMsg]);
-    if (!promptText) setChatInput('');
+    setChatInput('');
     setIsAiTyping(true);
+    setCopilotDrawerOpen(true);
+
+    const context = {
+      rfqs,
+      bids,
+      pos,
+      vendors,
+      selectedRfq: activeRfq,
+    };
 
     try {
-      const aiResponse = await ProcurementAIService.queryAssistant(
-        text,
-        { activeRfq, rfqs, pos, bids },
-        useLiveGemini
-      );
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          ...aiResponse,
-          id: `ai-${Date.now()}`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
+      const response = await ProcurementAIService.queryAssistant(text, context, useLiveGemini);
+      const assistantMsg: ChatMessage = {
+        id: `a-${Date.now()}`,
+        sender: 'assistant',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        content: response.content,
+        mode: response.mode,
+        citations: response.citations,
+        suggestedAction: response.suggestedAction,
+      };
+      setChatMessages((prev) => [...prev, assistantMsg]);
     } catch {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `ai-err-${Date.now()}`,
-          sender: 'assistant',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          mode: 'SIMULATED_PRESET',
-          content: 'Inference completed via fallback offline intelligence core.',
-          citations: ['Local Procurement Knowledge Base v4.2'],
-        },
-      ]);
+      const fallbackMsg: ChatMessage = {
+        id: `a-${Date.now()}`,
+        sender: 'assistant',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        content:
+          'Pipeline evaluated against internal spend controls. All parameters remain within authorized delegations.',
+        mode: 'SIMULATED_PRESET',
+        citations: ['[SOX-Sec-404]'],
+      };
+      setChatMessages((prev) => [...prev, fallbackMsg]);
     } finally {
       setIsAiTyping(false);
     }
   };
 
-  const handleExecuteSuggestedAction = (action?: ChatMessage['suggestedAction']) => {
+  const handleExecuteSuggestedAction = (action: ChatMessage['suggestedAction']) => {
     if (!action) return;
     if (action.actionType === 'NAVIGATE_TAB') {
-      setActiveTab(action.payload as any);
-      setCopilotDrawerOpen(false); // Close mobile copilot so user sees the new tab
+      setActiveTab(action.payload as TabType);
+      setCopilotDrawerOpen(false);
     } else if (action.actionType === 'OPEN_COMPARISON') {
       setSelectedRfqId(action.payload);
       setActiveTab('bids');
       setCopilotDrawerOpen(false);
     } else if (action.actionType === 'APPROVE_PO') {
       handleApprovePo(action.payload);
+      setCopilotDrawerOpen(false);
     }
   };
 
-  // Handlers for Interactive Demo Actions
+  // PO Action Handlers
   const handleApprovePo = (poId: string) => {
     setPos((prev) =>
-      prev.map((item) => {
-        if (item.id === poId) {
-          return {
-            ...item,
-            status: 'APPROVED',
-            complianceWarning: undefined,
-            complianceCleared: true,
-          };
-        }
-        return item;
-      })
+      prev.map((p) => (p.id === poId ? { ...p, status: 'APPROVED' as const, approverRole: 'Sarah Chen (Director)' } : p))
     );
-    showToast('Purchase Order Approved', `PO ${poId} authorized for commitment release.`);
+    showToast('Dual Sign-Off Executed', `PO-${poId} approved and synchronized to SAP S/4HANA.`);
   };
 
   const handleResolveFlag = (poId: string) => {
     setPos((prev) =>
-      prev.map((item) => {
-        if (item.id === poId) {
-          return {
-            ...item,
-            status: 'PENDING_APPROVAL',
-            complianceWarning: 'Form CS-8 Sole-Source Waiver attached & countersigned by Legal',
-            complianceCleared: true,
-          };
-        }
-        return item;
-      })
+      prev.map((p) =>
+        p.id === poId
+          ? {
+              ...p,
+              status: 'APPROVED' as const,
+              complianceCleared: true,
+              complianceWarning: 'Form CS-8 Sole-Source Waiver Authorized by Group Treasury.',
+            }
+          : p
+      )
     );
-    showToast('Exception Waiver Attached', 'Form CS-8 Sole-Source document validated by Legal.', 'info');
+    showToast('SOX Exception Cleared', `Form CS-8 Sole-Source waiver authorized for PO-${poId}.`);
   };
 
+  // Award Bid Handler
   const handleAwardBid = (bid: VendorBid) => {
-    // Award RFQ and generate PO
+    if (!activeRfq) return;
+
     setRfqs((prev) =>
-      prev.map((r) => (r.id === bid.rfqId ? { ...r, status: 'AWARDED' as RFQStatus } : r))
+      prev.map((r) => (r.id === activeRfq.id ? { ...r, status: 'AWARDED' as const } : r))
     );
 
+    const isOverSoxThreshold = bid.unitPriceTotal > 250000;
     const newPo: PurchaseOrder = {
-      id: `po-${Date.now().toString().slice(-4)}`,
-      poNumber: `PO-2025-${Math.floor(10000 + Math.random() * 90000)}`,
-      rfqRef: activeRfq?.rfqNumber || 'RFQ-2025-0891',
+      id: `po-${Date.now()}`,
+      poNumber: `PO-2025-${Math.floor(1000 + Math.random() * 9000)}`,
+      rfqRef: activeRfq.rfqNumber,
       vendorName: bid.vendorName,
       amount: bid.unitPriceTotal,
       currency: 'USD',
-      status: 'APPROVED',
+      status: isOverSoxThreshold ? 'FLAGGED' : 'PENDING_APPROVAL',
       issueDate: new Date().toISOString().split('T')[0],
-      approverRole: 'VP of Global Procurement',
-      paymentTerms: 'Net 45',
+      approverRole: 'Strategic Sourcing Director',
+      paymentTerms: 'Net 45 Days',
+      complianceWarning: isOverSoxThreshold
+        ? 'Single-source contract exceeds $250,000 threshold. Form CS-8 Sole-Source Justification waiver mandatory.'
+        : undefined,
     };
 
     setPos((prev) => [newPo, ...prev]);
     setIsAwardModalOpen(false);
-    showToast('Contract Award Executed', `Awarded to ${bid.vendorName}. Generated Purchase Order ${newPo.poNumber}.`);
+    setSelectedBidForAward(null);
+
+    showToast(
+      'Contract Award Finalized',
+      `${bid.vendorName} awarded. ${newPo.poNumber} generated ${isOverSoxThreshold ? '(SOX Hold applied)' : ''}.`
+    );
+
     setActiveTab('pos');
   };
 
+  // Create New RFQ Requisition Handler
   const handleCreateNewRfq = (e: React.FormEvent) => {
     e.preventDefault();
-    const rfqNum = `RFQ-2025-${Math.floor(1000 + Math.random() * 9000)}`;
+    if (!newRfqTitle.trim()) return;
+
+    const rfqNum = `RFQ-2025-${Math.floor(2000 + Math.random() * 8000)}`;
     const created: RFQ = {
       id: `rfq-${Date.now()}`,
       rfqNumber: rfqNum,
-      title: newRfqTitle || 'Procurement Package',
+      title: newRfqTitle,
       category: newRfqCategory,
       department: newRfqDept,
       budget: Number(newRfqBudget),
-      estTotalValue: Number(newRfqBudget) * 0.95,
+      estTotalValue: Number(newRfqBudget) * 0.94,
       status: 'OPEN_FOR_BIDS',
       deadline: '2025-05-30',
       lineItems: [
@@ -267,14 +343,51 @@ export default function App() {
     setRfqs((prev) => [created, ...prev]);
     setIsCreateRfqModalOpen(false);
     setNewRfqTitle('');
-    showToast('RFQ Published to Vendor Network', `${rfqNum} is now active.`);
+    showToast('Requisition Published', `${rfqNum} is now live in the vendor network.`);
     setActiveTab('rfqs');
   };
 
+  // If user is in Public Landing Page mode:
+  if (viewMode === 'public') {
+    return (
+      <>
+        <LandingPage
+          onEnterApp={() => setViewMode('workspace')}
+          onOpenAuth={(mode = 'signin') => {
+            setAuthMode(mode);
+            setIsAuthModalOpen(true);
+          }}
+          onOpenContact={() => setIsContactModalOpen(true)}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+        />
+
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          initialMode={authMode}
+          onSuccess={(email) => {
+            showToast('Authenticated Successfully', `Welcome back, ${email}.`);
+            setViewMode('workspace');
+          }}
+        />
+
+        <ContactSalesModal
+          isOpen={isContactModalOpen}
+          onClose={() => setIsContactModalOpen(false)}
+          onSuccess={() => {
+            showToast('Consultation Requested', 'Our Enterprise Sourcing Principal will connect shortly.');
+          }}
+        />
+      </>
+    );
+  }
+
+  // Workspace Mode:
   return (
-    <div className="flex flex-col md:flex-row h-[100dvh] w-full overflow-hidden bg-slate-950 font-sans text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="flex flex-col md:flex-row h-[100dvh] w-full overflow-hidden bg-[#F6F5F1] dark:bg-[#0B1614] font-sans text-[#17272A] dark:text-[#EBF1F0] antialiased selection:bg-[#173E38]/15 selection:text-[#173E38] transition-colors">
       {/* ========================================================= */}
-      {/* 1. NAVIGATION (Desktop Sidebar + Mobile Top App Bar + Bottom Nav) */}
+      {/* 1. NAVIGATION (Sidebar on desktop, Top App Bar + Bottom Nav on mobile) */}
       {/* ========================================================= */}
       <Navigation
         activeTab={activeTab}
@@ -289,94 +402,121 @@ export default function App() {
         setSearchQuery={setSearchQuery}
         isMobileSearchOpen={isMobileSearchOpen}
         setIsMobileSearchOpen={setIsMobileSearchOpen}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
+        unreadNotificationsCount={flaggedPosCount > 0 ? flaggedPosCount + 1 : 1}
+        onSwitchToPublicSite={() => setViewMode('public')}
       />
 
       {/* ========================================================= */}
       {/* 2. MAIN WORKSPACE VIEWPORT */}
       {/* ========================================================= */}
-      <main className="flex flex-1 flex-col overflow-hidden bg-slate-950 md:bg-slate-900/40 min-w-0">
+      <main className="flex flex-1 flex-col overflow-hidden bg-[#F6F5F1] dark:bg-[#0B1614] min-w-0">
         {/* Desktop Top Header Bar (Hidden on <= 767px Mobile) */}
-        <header className="hidden md:flex h-16 items-center justify-between border-b border-slate-800 px-6 backdrop-blur-md bg-slate-900/80 shrink-0">
+        <header className="hidden md:flex h-16 items-center justify-between border-b border-[#DDE3E1] dark:border-[#24423D] px-6 bg-white/80 dark:bg-[#11211E]/80 backdrop-blur-md shrink-0">
           <div className="flex items-center gap-4 flex-1">
             <div className="relative w-80">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#647A7B] dark:text-[#8BA39F] pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search RFQs, suppliers, line items..."
+                placeholder="Search RFQs, suppliers, SKUs (⌘K)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-800/90 py-2 pl-9 pr-3 text-xs text-slate-200 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6] dark:bg-[#162B27] py-2 pl-9 pr-3 text-xs text-[#17272A] dark:text-[#EBF1F0] placeholder-[#92A4A3] focus:border-[#173E38] dark:focus:border-[#2E7A6F] focus:outline-none"
               />
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 font-mono text-[11px]">
-                FY-2025 Global Hub
-              </span>
-            </div>
+            <button
+              onClick={() => setViewMode('public')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] hover:bg-[#FAF9F6] dark:hover:bg-[#162B27] border border-[#DDE3E1] dark:border-[#24423D] transition-colors"
+            >
+              <Globe className="h-3.5 w-3.5 text-[#C17C43] dark:text-[#D48D55]" />
+              <span>Public Overview Site</span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Notifications Bell */}
             <button
-              onClick={() => setIsCreateRfqModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-500 active:scale-98 transition-all min-h-[38px]"
+              onClick={() => setIsNotificationsOpen(true)}
+              className="relative p-2 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors"
+              aria-label="Open notifications"
             >
-              <Plus className="h-4 w-4" />
-              <span>Create Requisition</span>
+              <Bell className="h-4 w-4" />
+              {flaggedPosCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#C17C43]" />
+              )}
             </button>
 
+            {/* Theme Toggle */}
             <button
-              onClick={() => setCopilotDrawerOpen(!copilotDrawerOpen)}
-              className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all ${
-                copilotDrawerOpen
-                  ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-300 shadow-sm shadow-indigo-500/20'
-                  : 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-750'
-              }`}
+              onClick={toggleTheme}
+              className="p-2 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors"
+              aria-label="Toggle visual theme"
             >
-              <Bot className="h-4 w-4 text-indigo-400" />
-              <span>AI Copilot</span>
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
+
+            {/* Create Requisition */}
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsCreateRfqModalOpen(true)}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Create Requisition
+            </Button>
+
+            {/* AI Copilot Trigger */}
+            <Button
+              variant={copilotDrawerOpen ? 'accent' : 'secondary'}
+              size="sm"
+              onClick={() => setCopilotDrawerOpen(!copilotDrawerOpen)}
+              leftIcon={<Sparkles className="h-4 w-4" />}
+            >
+              <span>Copilot</span>
+              <span className="h-2 w-2 rounded-full bg-[#1B6A4A] dark:bg-[#38B482]" />
+            </Button>
           </div>
         </header>
 
         {/* Toast Alert Notification */}
         {toastMessage && (
-          <div className="fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-8 sm:w-auto z-50 flex items-center gap-3 rounded-2xl border border-indigo-500/40 bg-slate-900/95 p-3.5 sm:p-4 text-xs shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-4 duration-200 max-w-md">
-            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+          <div className="fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-8 sm:w-auto z-50 flex items-center gap-3 rounded-xl border border-[#173E38]/30 dark:border-[#2E7A6F]/40 bg-white dark:bg-[#11211E] p-3.5 sm:p-4 text-xs shadow-xl animate-in fade-in slide-in-from-top-4 duration-150 max-w-md">
+            <CheckCircle2 className="h-5 w-5 text-[#1B6A4A] dark:text-[#38B482] shrink-0" />
             <div className="flex-1">
-              <p className="font-bold text-white text-xs sm:text-sm">{toastMessage.title}</p>
-              <p className="text-slate-300 mt-0.5 text-[11px] sm:text-xs leading-relaxed">{toastMessage.desc}</p>
+              <p className="font-bold text-[#17272A] dark:text-[#EBF1F0] text-xs sm:text-sm">{toastMessage.title}</p>
+              <p className="text-[#647A7B] dark:text-[#8BA39F] mt-0.5 text-[11px] sm:text-xs leading-relaxed">{toastMessage.desc}</p>
             </div>
           </div>
         )}
 
-        {/* Content Body View Manager (With extra bottom padding for mobile bottom bar + FAB) */}
-        <div className="flex-1 overflow-y-auto touch-scroll p-3.5 sm:p-6 pb-28 md:pb-6 min-w-0">
+        {/* Content Body View Manager */}
+        <div className="flex-1 overflow-y-auto touch-scroll p-4 sm:p-6 pb-28 md:pb-6 min-w-0">
           {activeTab === 'overview' && (
             <OverviewView
               rfqs={rfqs}
               pos={pos}
               totalPipelineSpend={totalPipelineSpend}
+              openRfqsCount={openRfqsCount}
+              bidsUnderReviewCount={bids.length}
               flaggedPosCount={flaggedPosCount}
-              onSelectRfqForBids={(rfqId) => {
+              onNavigateTab={(tab) => setActiveTab(tab)}
+              onResolveFlag={handleResolveFlag}
+              onEvaluateBids={(rfqId) => {
                 setSelectedRfqId(rfqId);
                 setActiveTab('bids');
               }}
-              onNavigateTab={(tab) => setActiveTab(tab)}
               onSendPrompt={handleSendPrompt}
-              onResolveFlag={handleResolveFlag}
             />
           )}
 
           {activeTab === 'rfqs' && (
             <RfqsView
-              filteredRfqs={filteredRfqs}
-              activeRfq={activeRfq}
-              selectedRfqId={selectedRfqId}
-              setSelectedRfqId={setSelectedRfqId}
-              rfqCategoryFilter={rfqCategoryFilter}
-              setRfqCategoryFilter={setRfqCategoryFilter}
+              rfqs={filteredRfqs}
+              categoryFilter={rfqCategoryFilter}
+              setCategoryFilter={setRfqCategoryFilter}
               onOpenCreateModal={() => setIsCreateRfqModalOpen(true)}
               onEvaluateBids={(rfqId) => {
                 setSelectedRfqId(rfqId);
@@ -423,7 +563,7 @@ export default function App() {
                       : r
                   )
                 );
-                showToast('Simulated Supplier Bid Received', `Apex Data submitted quote for ${activeRfq.rfqNumber}.`);
+                showToast('Supplier Proposal Ingested', `Apex Data submitted quote for ${activeRfq.rfqNumber}.`);
               }}
             />
           )}
@@ -434,7 +574,7 @@ export default function App() {
               vendorTierFilter={vendorTierFilter}
               setVendorTierFilter={setVendorTierFilter}
               onAuditVendor={(vendorName) => {
-                handleSendPrompt(`Audit performance history and ESG risks for ${vendorName}`);
+                handleSendPrompt(`Audit performance history and ESG compliance risks for supplier ${vendorName}`);
               }}
             />
           )}
@@ -445,9 +585,17 @@ export default function App() {
               onApprovePo={handleApprovePo}
               onResolveFlag={handleResolveFlag}
               onBatchAudit={() => {
-                handleSendPrompt('Audit all open purchase orders for compliance');
+                handleSendPrompt('Audit all open purchase orders for SOX Section 404 thresholds and single-source exposure');
               }}
             />
+          )}
+
+          {activeTab === 'org' && (
+            <OrganizationSettingsView />
+          )}
+
+          {activeTab === 'profile' && (
+            <UserProfileView />
           )}
         </div>
 
@@ -455,12 +603,12 @@ export default function App() {
         <div className="md:hidden fixed bottom-20 right-4 z-30">
           <button
             onClick={() => setCopilotDrawerOpen(true)}
-            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 px-4 py-3 text-xs font-bold text-white shadow-xl shadow-indigo-600/40 border border-indigo-400/40 active:scale-95 transition-all"
+            className="flex items-center gap-2 rounded-full bg-[#173E38] dark:bg-[#2E7A6F] px-4 py-3 text-xs font-bold text-white shadow-lg border border-[#C17C43]/40 active:scale-95 transition-all"
             aria-label="Open AI Copilot Chat"
           >
-            <Sparkles className="h-4 w-4 text-indigo-100" />
-            <span>AI Copilot</span>
-            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <Sparkles className="h-4 w-4 text-[#C17C43] dark:text-[#D48D55]" />
+            <span>Copilot</span>
+            <span className="flex h-2 w-2 rounded-full bg-[#1B6A4A] dark:bg-[#38B482] animate-pulse" />
           </button>
         </div>
       </main>
@@ -482,7 +630,16 @@ export default function App() {
       />
 
       {/* ========================================================= */}
-      {/* 4. MODALS (CREATE RFQ & AWARD BID) */}
+      {/* 4. NOTIFICATIONS DRAWER */}
+      {/* ========================================================= */}
+      <NotificationsDrawer
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        onNavigateTab={(tab) => setActiveTab(tab)}
+      />
+
+      {/* ========================================================= */}
+      {/* 5. MODALS (CREATE RFQ & AWARD BID) */}
       {/* ========================================================= */}
       <CreateRfqModal
         isOpen={isCreateRfqModalOpen}
@@ -503,6 +660,23 @@ export default function App() {
         onClose={() => setIsAwardModalOpen(false)}
         selectedBid={selectedBidForAward}
         onConfirmAward={handleAwardBid}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authMode}
+        onSuccess={(email) => {
+          showToast('Authenticated Successfully', `Welcome back, ${email}.`);
+        }}
+      />
+
+      <ContactSalesModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+        onSuccess={() => {
+          showToast('Consultation Requested', 'Our Enterprise Sourcing Principal will connect shortly.');
+        }}
       />
     </div>
   );
