@@ -3,15 +3,18 @@ import { Logo } from '../brand/Logo';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
-import { X, ShieldCheck, Mail, Lock, ArrowRight, CheckCircle2, Building, Key } from 'lucide-react';
+import { X, ShieldCheck, Mail, Lock, ArrowRight, CheckCircle2, Building, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../../lib/firebase';
 
-export type AuthMode = 'signin' | 'recovery' | 'invite' | 'verify';
+export type AuthMode = 'signin' | 'register' | 'recovery' | 'invite';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: AuthMode;
-  onSuccess: (userEmail: string) => void;
+  onSuccess?: (userEmail: string) => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -20,28 +23,81 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'signin',
   onSuccess,
 }) => {
+  const { signInWithGoogle, authError: contextAuthError } = useAuth();
   const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [email, setEmail] = useState('sarah.chen@enterprise.global');
-  const [password, setPassword] = useState('••••••••••••');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [recoverySent, setRecoverySent] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      await signInWithGoogle();
+      if (onSuccess) onSuccess('google-auth-user');
+      onClose();
+    } catch (err: any) {
+      console.error('Google Sign-In failed:', err);
+      setErrorMessage(err.message || 'Google authentication failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null);
 
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
       if (mode === 'recovery') {
+        if (!email.trim()) {
+          setErrorMessage('Please enter your work email address.');
+          setIsLoading(false);
+          return;
+        }
+        await sendPasswordResetEmail(auth, email.trim());
         setRecoverySent(true);
-      } else if (mode === 'signin' || mode === 'invite' || mode === 'verify') {
-        onSuccess(email);
+      } else if (mode === 'register') {
+        if (!email.trim() || !password) {
+          setErrorMessage('Please provide both work email and a secure password.');
+          setIsLoading(false);
+          return;
+        }
+        await createUserWithEmailAndPassword(auth, email.trim(), password);
+        if (onSuccess) onSuccess(email);
+        onClose();
+      } else {
+        // signin or invite
+        if (!email.trim() || !password) {
+          setErrorMessage('Please enter your work email and password.');
+          setIsLoading(false);
+          return;
+        }
+        await signInWithEmailAndPassword(auth, email.trim(), password);
+        if (onSuccess) onSuccess(email);
         onClose();
       }
-    }, 600);
+    } catch (err: any) {
+      console.error('Auth error:', err);
+      let msg = err.message || 'Authentication failed. Please verify credentials.';
+      if (err.code === 'auth/operation-not-allowed') {
+        msg = 'Email/password sign-in is not enabled for this project. Please use the Google Sign-In button above.';
+      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        msg = 'Invalid email or password. You can also sign in instantly using Google.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        msg = 'An account with this email already exists. Try signing in instead.';
+      } else if (err.code === 'auth/weak-password') {
+        msg = 'Password should be at least 6 characters.';
+      }
+      setErrorMessage(msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,28 +123,74 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <Logo size="lg" variant="compact" />
           <h2 className="mt-4 text-lg sm:text-xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
             {mode === 'signin' && 'Sign in to Enterprise Hub'}
+            {mode === 'register' && 'Create Enterprise Account'}
             {mode === 'recovery' && 'Fiduciary Account Recovery'}
             {mode === 'invite' && 'Accept Team Invitation'}
-            {mode === 'verify' && 'Hardware 2FA Verification'}
           </h2>
           <p className="mt-1 text-xs text-[#647A7B] dark:text-[#8BA39F] max-w-xs">
             {mode === 'signin' && 'Access authorized procurement pipelines, SOX approval queues, and supplier matrices.'}
-            {mode === 'recovery' && 'Enter your verified work email to receive a secure time-limited login link.'}
+            {mode === 'register' && 'Register your verified corporate identity to access RFQs and purchase order delegations.'}
+            {mode === 'recovery' && 'Enter your verified work email to receive a secure password recovery link.'}
             {mode === 'invite' && 'You have been invited to join the Strategic Sourcing & Treasury review team.'}
-            {mode === 'verify' && 'Enter the 6-digit confirmation key sent to your enterprise authenticator.'}
           </p>
+        </div>
+
+        {/* Error notification */}
+        {(errorMessage || contextAuthError) && (
+          <div className="mt-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 flex items-start gap-2 text-xs text-red-700 dark:text-red-400">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>{errorMessage || contextAuthError}</span>
+          </div>
+        )}
+
+        {/* Primary SSO Action - Google Sign In */}
+        <div className="mt-5 space-y-3">
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 rounded-xl border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#162B27] px-4 py-3 text-sm font-semibold text-[#17272A] dark:text-[#EBF1F0] hover:bg-[#FAF9F6] dark:hover:bg-[#1D3732] transition-all shadow-xs hover:shadow-sm disabled:opacity-50"
+          >
+            {/* Google Icon SVG */}
+            <svg className="h-4 w-4" viewBox="0 0 24 24">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                fill="#EA4335"
+              />
+            </svg>
+            <span>Continue with Google Account</span>
+          </button>
+
+          <div className="relative flex items-center justify-center my-3">
+            <div className="w-full border-t border-[#DDE3E1] dark:border-[#24423D]" />
+            <span className="absolute bg-white dark:bg-[#11211E] px-2 text-[10px] uppercase font-semibold text-[#647A7B] dark:text-[#8BA39F] tracking-wider">
+              Or with email credentials
+            </span>
+          </div>
         </div>
 
         {/* Form Body */}
         {mode === 'recovery' && recoverySent ? (
-          <div className="mt-6 text-center space-y-4">
+          <div className="mt-4 text-center space-y-4">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#1B6A4A]/10 text-[#1B6A4A] dark:bg-[#38B482]/20 dark:text-[#38B482]">
               <CheckCircle2 className="h-6 w-6" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-[#17272A] dark:text-[#EBF1F0]">Recovery Link Dispatched</h3>
               <p className="mt-1 text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                A secure login link was dispatched to <strong className="text-[#17272A] dark:text-[#EBF1F0]">{email}</strong>. Valid for 15 minutes.
+                A password reset email was dispatched to <strong className="text-[#17272A] dark:text-[#EBF1F0]">{email}</strong>.
               </p>
             </div>
             <Button
@@ -104,94 +206,54 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
-            {/* Corporate SSO Quick Action */}
-            {mode === 'signin' && (
-              <div className="space-y-2 mb-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsLoading(true);
-                    setTimeout(() => {
-                      setIsLoading(false);
-                      onSuccess(email);
-                      onClose();
-                    }, 400);
-                  }}
-                  className="w-full flex items-center justify-center gap-2.5 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6] dark:bg-[#162B27] px-4 py-2.5 text-xs sm:text-sm font-medium text-[#17272A] dark:text-[#EBF1F0] hover:bg-white dark:hover:bg-[#1D3732] transition-colors shadow-2xs"
-                >
-                  <Building className="h-4 w-4 text-[#173E38] dark:text-[#4EA89A]" />
-                  <span>Single Sign-On (Okta / Azure AD / SAML)</span>
-                </button>
-                <div className="relative flex items-center justify-center">
-                  <div className="w-full border-t border-[#DDE3E1] dark:border-[#24423D]" />
-                  <span className="absolute bg-white dark:bg-[#11211E] px-2 text-[10px] uppercase font-semibold text-[#647A7B] dark:text-[#8BA39F] tracking-wider">
-                    Or with credentials
-                  </span>
-                </div>
-              </div>
-            )}
+          <form onSubmit={handleSubmit} className="mt-3 space-y-3.5">
+            <Input
+              label="Work Email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@company.com"
+              leftIcon={<Mail className="h-4 w-4" />}
+            />
 
-            {mode === 'invite' && (
-              <div className="rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] p-3 border border-[#DDE3E1] dark:border-[#24423D] flex items-center justify-between text-xs mb-2">
-                <div>
-                  <p className="font-semibold text-[#17272A] dark:text-[#EBF1F0]">Invited by: Group Treasury</p>
-                  <p className="text-[#647A7B] dark:text-[#8BA39F]">Role: Strategic Sourcing Director</p>
-                </div>
-                <Badge variant="success" size="sm">SOX Tier 1</Badge>
-              </div>
-            )}
-
-            {mode !== 'verify' ? (
-              <>
-                <Input
-                  label="Work Email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  leftIcon={<Mail className="h-4 w-4" />}
-                />
-
-                {mode !== 'recovery' && (
-                  <div>
-                    <Input
-                      label="Password"
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      leftIcon={<Lock className="h-4 w-4" />}
-                    />
-                    <div className="mt-1 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setMode('recovery')}
-                        className="text-[11px] text-[#C17C43] dark:text-[#D48D55] hover:underline"
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
+            {mode !== 'recovery' && (
               <div>
                 <Input
-                  label="6-Digit Authenticator Key"
-                  type="text"
-                  maxLength={6}
+                  label="Password"
+                  type="password"
                   required
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  placeholder="849201"
-                  leftIcon={<Key className="h-4 w-4" />}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  leftIcon={<Lock className="h-4 w-4" />}
                 />
-                <p className="mt-1 text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                  Check your corporate device or YubiKey token.
-                </p>
+                <div className="mt-1 flex justify-between items-center text-[11px]">
+                  {mode === 'signin' ? (
+                    <button
+                      type="button"
+                      onClick={() => setMode('register')}
+                      className="text-[#173E38] dark:text-[#4EA89A] hover:underline"
+                    >
+                      Need an account? Register
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setMode('signin')}
+                      className="text-[#173E38] dark:text-[#4EA89A] hover:underline"
+                    >
+                      Have an account? Sign in
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setMode('recovery')}
+                    className="text-[#C17C43] dark:text-[#D48D55] hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </div>
             )}
 
@@ -205,32 +267,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               className="mt-2"
             >
               {mode === 'signin' && 'Sign In to Workspace'}
-              {mode === 'recovery' && 'Send Secure Magic Link'}
+              {mode === 'register' && 'Create Account'}
+              {mode === 'recovery' && 'Send Password Reset Email'}
               {mode === 'invite' && 'Confirm & Enter Platform'}
-              {mode === 'verify' && 'Verify & Authenticate'}
             </Button>
           </form>
         )}
 
-        {/* Footer Navigation Switcher */}
+        {/* Footer Security Badges */}
         <div className="mt-5 pt-4 border-t border-[#DDE3E1] dark:border-[#24423D] flex items-center justify-between text-xs text-[#647A7B] dark:text-[#8BA39F]">
           <div className="flex items-center gap-1.5 text-[11px]">
             <ShieldCheck className="h-3.5 w-3.5 text-[#1B6A4A] dark:text-[#38B482]" />
-            <span>SOC2 Type II • 256-Bit TLS</span>
+            <span>Firebase Auth • SOC2 • TLS</span>
           </div>
 
           <div>
             {mode === 'signin' ? (
               <button
                 onClick={() => setMode('invite')}
-                className="text-[#173E38] dark:text-[#4EA89A] font-medium hover:underline"
+                className="text-[#173E38] dark:text-[#4EA89A] font-medium hover:underline text-[11px]"
               >
                 Accept Invite
               </button>
             ) : (
               <button
                 onClick={() => setMode('signin')}
-                className="text-[#173E38] dark:text-[#4EA89A] font-medium hover:underline"
+                className="text-[#173E38] dark:text-[#4EA89A] font-medium hover:underline text-[11px]"
               >
                 Sign In
               </button>

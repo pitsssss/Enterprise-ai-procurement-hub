@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    function isMember(orgId) {
+      return isAuth() && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+    }
+
+    function getMemberRole(orgId) {
+      return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role;
+    }
+
+    function hasAnyRole(orgId, roles) {
+      return isMember(orgId) && (getMemberRole(orgId) in roles);
+    }
+
+    function isAdmin(orgId) {
+      return hasAnyRole(orgId, ['ADMIN']);
+    }
+
+    function isProcurementManager(orgId) {
+      return hasAnyRole(orgId, ['ADMIN', 'PROCUREMENT_MANAGER']);
+    }
+
+    function isBuyer(orgId) {
+      return hasAnyRole(orgId, ['ADMIN', 'PROCUREMENT_MANAGER', 'BUYER']);
+    }
+
+    function isApprover(orgId) {
+      return hasAnyRole(orgId, ['ADMIN', 'APPROVER', 'FINANCE', 'PROCUREMENT_MANAGER']);
+    }
+
+    function isFinance(orgId) {
+      return hasAnyRole(orgId, ['ADMIN', 'FINANCE']);
+    }
+
+    // User Profiles
+    match /userProfiles/{userId} {
+      allow read: if isAuth();
+      allow write: if isUser(userId);
+    }
+
+    // Organizations
+    match /organizations/{orgId} {
+      allow read: if isMember(orgId) || (isAuth() && request.auth.uid == resource.data.ownerUid);
+      allow create: if isAuth() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isAdmin(orgId);
+      allow delete: if isAdmin(orgId);
+
+      // Organization Members
+      match /members/{memberId} {
+        allow read: if isMember(orgId) || isUser(memberId);
+        allow create: if isAuth() && (isAdmin(orgId) || request.auth.uid == memberId);
+        allow update, delete: if isAdmin(orgId);
+      }
+
+      // RFQs
+      match /rfqs/{rfqId} {
+        allow read: if isMember(orgId);
+        allow create: if isBuyer(orgId);
+        allow update: if isBuyer(orgId);
+        allow delete: if isAdmin(orgId);
+      }
+
+      // Vendors
+      match /vendors/{vendorId} {
+        allow read: if isMember(orgId);
+        allow create, update: if isProcurementManager(orgId) || isBuyer(orgId);
+        allow delete: if isAdmin(orgId);
+      }
+
+      // Vendor Bids
+      match /bids/{bidId} {
+        allow read: if isMember(orgId);
+        allow create, update: if isBuyer(orgId);
+        allow delete: if isAdmin(orgId);
+      }
+
+      // Purchase Orders
+      match /pos/{poId} {
+        allow read: if isMember(orgId);
+        allow create: if isBuyer(orgId);
+        allow update: if isMember(orgId);
+        allow delete: if isAdmin(orgId);
+      }
+
+      // Audit Events - STRICTLY IMMUTABLE & APPEND-ONLY
+      match /auditEvents/{eventId} {
+        allow read: if isMember(orgId);
+        allow create: if isMember(orgId);
+        allow update, delete: if false;
+      }
+
+      // Notifications
+      match /notifications/{notifId} {
+        allow read: if isMember(orgId);
+        allow create, update, delete: if isMember(orgId);
+      }
+    }
+  }
+}

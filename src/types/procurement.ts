@@ -1,6 +1,9 @@
 export type RFQStatus = 'DRAFT' | 'OPEN_FOR_BIDS' | 'EVALUATION' | 'AWARDED' | 'CANCELLED';
 export type POStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'DISPATCHED' | 'DELIVERED' | 'FLAGGED';
 export type VendorTier = 'TIER_1_STRATEGIC' | 'PREFERRED' | 'APPROVED' | 'PROBATIONARY';
+export type UserRole = 'ADMIN' | 'PROCUREMENT_MANAGER' | 'BUYER' | 'APPROVER' | 'FINANCE' | 'AUDITOR';
+
+export type TabType = 'overview' | 'rfqs' | 'bids' | 'vendors' | 'pos' | 'org' | 'profile';
 
 export interface LineItem {
   id: string;
@@ -13,6 +16,7 @@ export interface LineItem {
 
 export interface RFQ {
   id: string;
+  orgId?: string;
   rfqNumber: string;
   title: string;
   category: 'IT Hardware' | 'Facility Operations' | 'Precision Machining' | 'Raw Materials' | 'Logistics';
@@ -25,11 +29,16 @@ export interface RFQ {
   invitedVendorsCount: number;
   bidsReceivedCount: number;
   policyNotes?: string;
+  createdBy?: string;
   createdAt: string;
+  awardedBidId?: string;
+  awardedVendorName?: string;
+  awardedAt?: string;
 }
 
 export interface VendorBid {
   id: string;
+  orgId?: string;
   rfqId: string;
   vendorId: string;
   vendorName: string;
@@ -47,6 +56,7 @@ export interface VendorBid {
 
 export interface Vendor {
   id: string;
+  orgId?: string;
   name: string;
   tier: VendorTier;
   category: string;
@@ -62,6 +72,7 @@ export interface Vendor {
 
 export interface PurchaseOrder {
   id: string;
+  orgId?: string;
   poNumber: string;
   rfqRef: string;
   vendorName: string;
@@ -73,6 +84,71 @@ export interface PurchaseOrder {
   paymentTerms: string;
   complianceWarning?: string;
   complianceCleared?: boolean;
+  soxHold?: boolean;
+  waiverSignedBy?: string;
+  waiverSignedAt?: string;
+  waiverJustification?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  defaultCurrency: string;
+  soxComplianceEnabled: boolean;
+  soxThresholdUSD: number;
+  createdAt: string;
+  ownerUid: string;
+}
+
+export interface OrganizationMember {
+  uid: string;
+  orgId: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  department?: string;
+  joinedAt: string;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  currentOrgId: string;
+  language: 'en' | 'ar';
+  theme: 'light' | 'dark';
+  department?: string;
+  title?: string;
+  updatedAt: string;
+}
+
+export interface AuditEvent {
+  id: string;
+  orgId: string;
+  actorId: string;
+  actorEmail: string;
+  actorRole: UserRole;
+  action: string;
+  entityType: 'RFQ' | 'BID' | 'PURCHASE_ORDER' | 'VENDOR' | 'MEMBER' | 'ORGANIZATION';
+  entityId: string;
+  summary: string;
+  details?: string;
+  timestamp: string;
+}
+
+export interface ProcurementNotification {
+  id: string;
+  orgId: string;
+  title: string;
+  message: string;
+  type: 'INFO' | 'ACTION_REQUIRED' | 'WARNING' | 'SUCCESS';
+  read: boolean;
+  createdAt: string;
+  linkTab?: string;
 }
 
 export interface ChatMessage {

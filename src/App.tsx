@@ -12,13 +12,26 @@ import {
   Sliders,
   User,
   ShieldAlert,
+  Loader2,
+  Lock,
 } from 'lucide-react';
 
-import { RFQ, VendorBid, Vendor, PurchaseOrder, ChatMessage, RFQStatus } from './types/procurement';
+import { RFQ, VendorBid, Vendor, PurchaseOrder, ChatMessage, TabType } from './types/procurement';
 import { INITIAL_RFQS, INITIAL_BIDS, INITIAL_VENDORS, INITIAL_POS } from './data/mockData';
 import { ProcurementAIService } from './services/aiService';
+import {
+  subscribeRfqs,
+  subscribeBids,
+  subscribeVendors,
+  subscribePos,
+  createRfq,
+  awardRfqBid,
+  approvePurchaseOrder,
+  resolveSoxWaiver,
+} from './services/firestoreService';
+import { useAuth } from './contexts/AuthContext';
 
-import { Navigation, TabType } from './components/Navigation';
+import { Navigation } from './components/Navigation';
 import { AiCopilotDrawer } from './components/AiCopilotDrawer';
 import { OverviewView } from './components/views/OverviewView';
 import { RfqsView } from './components/views/RfqsView';
@@ -33,14 +46,17 @@ import { AuthModal, AuthMode } from './components/public/AuthModal';
 import { ContactSalesModal } from './components/public/ContactSalesModal';
 import { CreateRfqModal } from './components/modals/CreateRfqModal';
 import { AwardModal } from './components/modals/AwardModal';
+import { ResolveSoxWaiverModal } from './components/modals/ResolveSoxWaiverModal';
 import { Button } from './components/ui/Button';
 import { Badge } from './components/ui/Badge';
 
 export default function App() {
+  const { user, profile, organization, userRole, loading: authLoading, canPerform } = useAuth();
+
   // Public vs Workspace View Mode
   const [viewMode, setViewMode] = useState<'workspace' | 'public'>('workspace');
 
-  // Theme State (Default Warm Canvas Light; supports Deep Forest Dark)
+  // Theme State
   const [isDark, setIsDark] = useState<boolean>(() => {
     return document.documentElement.classList.contains('dark');
   });
@@ -66,6 +82,33 @@ export default function App() {
   const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS);
   const [pos, setPos] = useState<PurchaseOrder[]>(INITIAL_POS);
 
+  const orgId = organization?.id || 'org-synthetix-enterprise';
+
+  // Live Firestore Data Synchronization
+  useEffect(() => {
+    if (!user || !orgId) return;
+
+    const unsubRfqs = subscribeRfqs(orgId, (items) => {
+      if (items.length > 0) setRfqs(items);
+    });
+    const unsubBids = subscribeBids(orgId, (items) => {
+      if (items.length > 0) setBids(items);
+    });
+    const unsubVendors = subscribeVendors(orgId, (items) => {
+      if (items.length > 0) setVendors(items);
+    });
+    const unsubPos = subscribePos(orgId, (items) => {
+      if (items.length > 0) setPos(items);
+    });
+
+    return () => {
+      unsubRfqs();
+      unsubBids();
+      unsubVendors();
+      unsubPos();
+    };
+  }, [user, orgId]);
+
   // Filter & Search States
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -77,6 +120,8 @@ export default function App() {
   const [isCreateRfqModalOpen, setIsCreateRfqModalOpen] = useState(false);
   const [isAwardModalOpen, setIsAwardModalOpen] = useState(false);
   const [selectedBidForAward, setSelectedBidForAward] = useState<VendorBid | null>(null);
+  const [isSoxWaiverModalOpen, setIsSoxWaiverModalOpen] = useState(false);
+  const [selectedPoForWaiver, setSelectedPoForWaiver] = useState<PurchaseOrder | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
@@ -100,7 +145,7 @@ export default function App() {
       sender: 'assistant',
       timestamp: '09:15 AM',
       content:
-        'Welcome to Synthetix Sourcing. I have completed ingestion of active pipeline spend ($1.025M USD) across 4 requisitions. Note that PO-2025-0720 ($340,000) has an active SOX Section 404 hold requiring a Form CS-8 Sole-Source Justification waiver.',
+        'Welcome to Synthetix Sourcing. Real-time Firestore workspace active with SOX Section 404 dual-signoff policies and immutable audit tracking.',
       mode: 'SIMULATED_PRESET',
       citations: ['[SOX-Sec-404]', '[FAR-52.204-24]'],
       suggestedAction: {
@@ -202,6 +247,8 @@ export default function App() {
       pos,
       vendors,
       selectedRfq: activeRfq,
+      userRole,
+      organizationName: organization?.name,
     };
 
     try {
@@ -248,111 +295,174 @@ export default function App() {
   };
 
   // PO Action Handlers
-  const handleApprovePo = (poId: string) => {
-    setPos((prev) =>
-      prev.map((p) => (p.id === poId ? { ...p, status: 'APPROVED' as const, approverRole: 'Sarah Chen (Director)' } : p))
-    );
-    showToast('Dual Sign-Off Executed', `PO-${poId} approved and synchronized to SAP S/4HANA.`);
+  const handleApprovePo = async (poId: string) => {
+    if (!canPerform('APPROVE_PO')) {
+      showToast('Insufficient Permissions', `Role ${userRole} is not authorized to sign off purchase orders.`, 'warn');
+      return;
+    }
+
+    const targetPo = pos.find((p) => p.id === poId);
+    if (!targetPo) return;
+
+    try {
+      await approvePurchaseOrder(
+        orgId,
+        poId,
+        targetPo.poNumber,
+        {
+          uid: user?.uid || 'local-actor',
+          email: user?.email || 'signatory@synthetix.corp',
+          role: userRole,
+        }
+      );
+      showToast('Dual Sign-Off Executed', `${targetPo.poNumber} approved and synchronized to SAP S/4HANA.`);
+    } catch (err: any) {
+      showToast('Approval Failed', err.message, 'warn');
+    }
   };
 
-  const handleResolveFlag = (poId: string) => {
-    setPos((prev) =>
-      prev.map((p) =>
-        p.id === poId
-          ? {
-              ...p,
-              status: 'APPROVED' as const,
-              complianceCleared: true,
-              complianceWarning: 'Form CS-8 Sole-Source Waiver Authorized by Group Treasury.',
-            }
-          : p
-      )
-    );
-    showToast('SOX Exception Cleared', `Form CS-8 Sole-Source waiver authorized for PO-${poId}.`);
+  const handleOpenWaiverModal = (poId: string) => {
+    const targetPo = pos.find((p) => p.id === poId);
+    if (targetPo) {
+      setSelectedPoForWaiver(targetPo);
+      setIsSoxWaiverModalOpen(true);
+    }
+  };
+
+  const handleConfirmWaiver = async (po: PurchaseOrder, justification: string) => {
+    try {
+      await resolveSoxWaiver(
+        orgId,
+        po.id,
+        po.poNumber,
+        justification,
+        {
+          uid: user?.uid || 'finance-signatory',
+          email: user?.email || 'finance@synthetix.corp',
+          role: userRole,
+        }
+      );
+      showToast('SOX Exception Cleared', `Form CS-8 Sole-Source waiver authorized for ${po.poNumber}.`);
+    } catch (err: any) {
+      showToast('Waiver Failed', err.message, 'warn');
+    }
   };
 
   // Award Bid Handler
-  const handleAwardBid = (bid: VendorBid) => {
+  const handleAwardBid = async (bid: VendorBid) => {
     if (!activeRfq) return;
+    if (!canPerform('AWARD_BID')) {
+      showToast('Permission Denied', `Role ${userRole} cannot award supplier bids.`, 'warn');
+      return;
+    }
 
-    setRfqs((prev) =>
-      prev.map((r) => (r.id === activeRfq.id ? { ...r, status: 'AWARDED' as const } : r))
-    );
+    try {
+      const { newPo } = await awardRfqBid(
+        orgId,
+        activeRfq.id,
+        bid,
+        {
+          uid: user?.uid || 'buyer-uid',
+          email: user?.email || 'buyer@synthetix.corp',
+          role: userRole,
+        }
+      );
 
-    const isOverSoxThreshold = bid.unitPriceTotal > 250000;
-    const newPo: PurchaseOrder = {
-      id: `po-${Date.now()}`,
-      poNumber: `PO-2025-${Math.floor(1000 + Math.random() * 9000)}`,
-      rfqRef: activeRfq.rfqNumber,
-      vendorName: bid.vendorName,
-      amount: bid.unitPriceTotal,
-      currency: 'USD',
-      status: isOverSoxThreshold ? 'FLAGGED' : 'PENDING_APPROVAL',
-      issueDate: new Date().toISOString().split('T')[0],
-      approverRole: 'Strategic Sourcing Director',
-      paymentTerms: 'Net 45 Days',
-      complianceWarning: isOverSoxThreshold
-        ? 'Single-source contract exceeds $250,000 threshold. Form CS-8 Sole-Source Justification waiver mandatory.'
-        : undefined,
-    };
+      setIsAwardModalOpen(false);
+      setSelectedBidForAward(null);
 
-    setPos((prev) => [newPo, ...prev]);
-    setIsAwardModalOpen(false);
-    setSelectedBidForAward(null);
+      showToast(
+        'Contract Award Finalized',
+        `${bid.vendorName} awarded. ${newPo.poNumber} generated ${newPo.status === 'FLAGGED' ? '(SOX Hold applied)' : ''}.`
+      );
 
-    showToast(
-      'Contract Award Finalized',
-      `${bid.vendorName} awarded. ${newPo.poNumber} generated ${isOverSoxThreshold ? '(SOX Hold applied)' : ''}.`
-    );
-
-    setActiveTab('pos');
+      setActiveTab('pos');
+    } catch (err: any) {
+      showToast('Award Failed', err.message, 'warn');
+    }
   };
 
   // Create New RFQ Requisition Handler
-  const handleCreateNewRfq = (e: React.FormEvent) => {
+  const handleCreateNewRfq = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRfqTitle.trim()) return;
 
-    const rfqNum = `RFQ-2025-${Math.floor(2000 + Math.random() * 8000)}`;
-    const created: RFQ = {
-      id: `rfq-${Date.now()}`,
-      rfqNumber: rfqNum,
-      title: newRfqTitle,
-      category: newRfqCategory,
-      department: newRfqDept,
-      budget: Number(newRfqBudget),
-      estTotalValue: Number(newRfqBudget) * 0.94,
-      status: 'OPEN_FOR_BIDS',
-      deadline: '2025-05-30',
-      lineItems: [
-        {
-          id: `li-${Date.now()}`,
-          sku: 'SKU-NEW-PKG',
-          description: 'Custom verified enterprise line package',
-          quantity: 10,
-          unit: 'Units',
-          targetPrice: Number(newRfqBudget) / 10,
-        },
-      ],
-      invitedVendorsCount: 3,
-      bidsReceivedCount: 0,
-      policyNotes: 'Automated standard SOX dual-approval guidelines applied.',
-      createdAt: new Date().toISOString().split('T')[0],
-    };
+    if (!canPerform('CREATE_RFQ')) {
+      showToast('Permission Denied', `Role ${userRole} cannot create RFQs.`, 'warn');
+      return;
+    }
 
-    setRfqs((prev) => [created, ...prev]);
-    setIsCreateRfqModalOpen(false);
-    setNewRfqTitle('');
-    showToast('Requisition Published', `${rfqNum} is now live in the vendor network.`);
-    setActiveTab('rfqs');
+    const rfqNum = `RFQ-2025-${Math.floor(2000 + Math.random() * 8000)}`;
+
+    try {
+      await createRfq(
+        orgId,
+        {
+          rfqNumber: rfqNum,
+          title: newRfqTitle,
+          category: newRfqCategory,
+          department: newRfqDept,
+          budget: Number(newRfqBudget),
+          estTotalValue: Number(newRfqBudget) * 0.94,
+          status: 'OPEN_FOR_BIDS',
+          deadline: '2025-06-30',
+          lineItems: [
+            {
+              id: `li-${Date.now()}`,
+              sku: 'SKU-NEW-PKG',
+              description: 'Custom verified enterprise line package',
+              quantity: 10,
+              unit: 'Units',
+              targetPrice: Number(newRfqBudget) / 10,
+            },
+          ],
+          invitedVendorsCount: 3,
+          bidsReceivedCount: 0,
+          policyNotes: 'Automated standard SOX dual-approval guidelines applied.',
+        },
+        {
+          uid: user?.uid || 'creator-uid',
+          email: user?.email || 'buyer@synthetix.corp',
+          role: userRole,
+        }
+      );
+
+      setIsCreateRfqModalOpen(false);
+      setNewRfqTitle('');
+      showToast('Requisition Published', `${rfqNum} is now persistent in the organization database.`);
+      setActiveTab('rfqs');
+    } catch (err: any) {
+      showToast('Requisition Creation Failed', err.message, 'warn');
+    }
   };
 
-  // If user is in Public Landing Page mode:
-  if (viewMode === 'public') {
+  // If initial auth is loading:
+  if (authLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#F6F5F1] dark:bg-[#0B1614] text-[#17272A] dark:text-[#EBF1F0]">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#173E38] dark:text-[#4EA89A]" />
+          <p className="text-xs font-semibold text-[#647A7B] dark:text-[#8BA39F]">
+            Authenticating enterprise session & cryptographic keys...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is in Public Landing Page mode or not authenticated:
+  if (viewMode === 'public' || !user) {
     return (
       <>
         <LandingPage
-          onEnterApp={() => setViewMode('workspace')}
+          onEnterApp={() => {
+            if (user) {
+              setViewMode('workspace');
+            } else {
+              setAuthMode('signin');
+              setIsAuthModalOpen(true);
+            }
+          }}
           onOpenAuth={(mode = 'signin') => {
             setAuthMode(mode);
             setIsAuthModalOpen(true);
@@ -367,7 +477,7 @@ export default function App() {
           onClose={() => setIsAuthModalOpen(false)}
           initialMode={authMode}
           onSuccess={(email) => {
-            showToast('Authenticated Successfully', `Welcome back, ${email}.`);
+            showToast('Authenticated Successfully', `Welcome to Synthetix Hub, ${email}.`);
             setViewMode('workspace');
           }}
         />
@@ -503,7 +613,7 @@ export default function App() {
               bidsUnderReviewCount={bids.length}
               flaggedPosCount={flaggedPosCount}
               onNavigateTab={(tab) => setActiveTab(tab)}
-              onResolveFlag={handleResolveFlag}
+              onResolveFlag={handleOpenWaiverModal}
               onEvaluateBids={(rfqId) => {
                 setSelectedRfqId(rfqId);
                 setActiveTab('bids');
@@ -541,6 +651,7 @@ export default function App() {
                 if (!activeRfq) return;
                 const mockBid: VendorBid = {
                   id: `bid-${Date.now()}`,
+                  orgId,
                   rfqId: activeRfq.id,
                   vendorId: 'v-1',
                   vendorName: 'Apex Data Infrastructures',
@@ -556,13 +667,6 @@ export default function App() {
                   submissionDate: new Date().toISOString().split('T')[0],
                 };
                 setBids((prev) => [mockBid, ...prev]);
-                setRfqs((prev) =>
-                  prev.map((r) =>
-                    r.id === activeRfq.id
-                      ? { ...r, bidsReceivedCount: r.bidsReceivedCount + 1, status: 'EVALUATION' }
-                      : r
-                  )
-                );
                 showToast('Supplier Proposal Ingested', `Apex Data submitted quote for ${activeRfq.rfqNumber}.`);
               }}
             />
@@ -583,20 +687,16 @@ export default function App() {
             <PosView
               pos={pos}
               onApprovePo={handleApprovePo}
-              onResolveFlag={handleResolveFlag}
+              onResolveFlag={handleOpenWaiverModal}
               onBatchAudit={() => {
                 handleSendPrompt('Audit all open purchase orders for SOX Section 404 thresholds and single-source exposure');
               }}
             />
           )}
 
-          {activeTab === 'org' && (
-            <OrganizationSettingsView />
-          )}
+          {activeTab === 'org' && <OrganizationSettingsView />}
 
-          {activeTab === 'profile' && (
-            <UserProfileView />
-          )}
+          {activeTab === 'profile' && <UserProfileView />}
         </div>
 
         {/* Floating AI Copilot Trigger for Mobile (< md screens) */}
@@ -614,7 +714,7 @@ export default function App() {
       </main>
 
       {/* ========================================================= */}
-      {/* 3. AI SOURCING COPILOT (Full-screen sheet on mobile, right drawer on desktop) */}
+      {/* 3. AI SOURCING COPILOT */}
       {/* ========================================================= */}
       <AiCopilotDrawer
         isOpen={copilotDrawerOpen}
@@ -639,7 +739,7 @@ export default function App() {
       />
 
       {/* ========================================================= */}
-      {/* 5. MODALS (CREATE RFQ & AWARD BID) */}
+      {/* 5. MODALS */}
       {/* ========================================================= */}
       <CreateRfqModal
         isOpen={isCreateRfqModalOpen}
@@ -660,6 +760,17 @@ export default function App() {
         onClose={() => setIsAwardModalOpen(false)}
         selectedBid={selectedBidForAward}
         onConfirmAward={handleAwardBid}
+      />
+
+      <ResolveSoxWaiverModal
+        isOpen={isSoxWaiverModalOpen}
+        onClose={() => {
+          setIsSoxWaiverModalOpen(false);
+          setSelectedPoForWaiver(null);
+        }}
+        purchaseOrder={selectedPoForWaiver}
+        onConfirmWaiver={handleConfirmWaiver}
+        userRole={userRole}
       />
 
       <AuthModal

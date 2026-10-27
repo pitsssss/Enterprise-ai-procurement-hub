@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
+import { Select } from '../ui/Select';
 import {
   ShieldCheck,
   Building,
@@ -14,57 +15,153 @@ import {
   RefreshCw,
   FileText,
   Sliders,
+  Users,
+  UserPlus,
+  History,
+  Key,
+  Shield,
 } from 'lucide-react';
+import { Organization, OrganizationMember, AuditEvent, UserRole } from '../../types/procurement';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  subscribeMembers,
+  subscribeAuditEvents,
+  inviteOrganizationMember,
+  updateOrganizationMemberRole,
+} from '../../services/firestoreService';
 
 export const OrganizationSettingsView: React.FC = () => {
-  const [soxThreshold, setSoxThreshold] = useState(250000);
+  const { organization, currentMember, userRole, canPerform } = useAuth();
+  const [soxThreshold, setSoxThreshold] = useState(organization?.soxThresholdUSD || 250000);
   const [minBidsRequired, setMinBidsRequired] = useState(3);
   const [requireCs8Waiver, setRequireCs8Waiver] = useState(true);
   const [dualSignoffTreasury, setDualSignoffTreasury] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const handleSave = () => {
+  // Members and Audit Logs
+  const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [auditFilter, setAuditFilter] = useState<string>('ALL');
+
+  // Invite Member Modal State
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<UserRole>('BUYER');
+  const [inviteDept, setInviteDept] = useState('Procurement Operations');
+  const [inviteStatus, setInviteStatus] = useState<string | null>(null);
+
+  const orgId = organization?.id || 'org-synthetix-enterprise';
+
+  useEffect(() => {
+    if (!orgId) return;
+    const unsubMembers = subscribeMembers(orgId, (mList) => setMembers(mList));
+    const unsubAudit = subscribeAuditEvents(orgId, (aList) => setAuditEvents(aList));
+    return () => {
+      unsubMembers();
+      unsubAudit();
+    };
+  }, [orgId]);
+
+  const handleSavePolicies = () => {
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);
   };
 
+  const handleInviteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim() || !currentMember) return;
+    try {
+      await inviteOrganizationMember(
+        orgId,
+        inviteEmail.trim(),
+        inviteRole,
+        inviteDept,
+        {
+          uid: currentMember.uid,
+          email: currentMember.email,
+          role: userRole,
+        }
+      );
+      setInviteStatus(`Invitation dispatched to ${inviteEmail}`);
+      setInviteEmail('');
+      setTimeout(() => {
+        setIsInviteOpen(false);
+        setInviteStatus(null);
+      }, 1500);
+    } catch (err: any) {
+      setInviteStatus(`Failed to invite: ${err.message}`);
+    }
+  };
+
+  const handleRoleChange = async (targetUid: string, targetEmail: string, newRole: UserRole) => {
+    if (!currentMember) return;
+    try {
+      await updateOrganizationMemberRole(
+        orgId,
+        targetUid,
+        targetEmail,
+        newRole,
+        {
+          uid: currentMember.uid,
+          email: currentMember.email,
+          role: userRole,
+        }
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const filteredAuditEvents = auditEvents.filter((ev) => {
+    if (auditFilter === 'ALL') return true;
+    return ev.entityType === auditFilter;
+  });
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* View Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#DDE3E1] dark:border-[#24423D] pb-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
-            Organization Governance & ERP Architecture
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
+              Enterprise Governance & Workspace Administration
+            </h1>
+            <Badge variant="primary" size="sm">Multi-Tenant</Badge>
+          </div>
           <p className="mt-1 text-xs sm:text-sm text-[#647A7B] dark:text-[#8BA39F]">
-            Configure SOX Section 404 thresholds, dual-signoff policies, and live ERP synchronizers.
+            Organization: <strong className="text-[#17272A] dark:text-[#EBF1F0]">{organization?.name || 'Synthetix Global Corp'}</strong> ({orgId}) • Role-Based Access Control
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleSave}
-          leftIcon={<CheckCircle2 className="h-4 w-4" />}
-        >
-          {savedSuccess ? 'Policies Saved & Applied' : 'Save Policies'}
-        </Button>
+        {canPerform('MANAGE_MEMBERS') && (
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleSavePolicies}
+            leftIcon={<CheckCircle2 className="h-4 w-4" />}
+          >
+            {savedSuccess ? 'Policies Synchronized' : 'Save Policies'}
+          </Button>
+        )}
       </div>
 
       {/* 1. SOX & Fiduciary Approval Threshold Matrix */}
       <Card padding="md" className="space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#173E38]/10 text-[#173E38] dark:bg-[#2E7A6F]/20 dark:text-[#4EA89A]">
-            <Lock className="h-5 w-5" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#173E38]/10 text-[#173E38] dark:bg-[#2E7A6F]/20 dark:text-[#4EA89A]">
+              <Lock className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                SOX Section 404 Dual-Authorization Engine
+              </h2>
+              <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
+                Statutory dual-custody approval tiers and sole-source waiver enforcement.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-              SOX Section 404 Dual-Authorization Engine
-            </h2>
-            <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-              Mandatory dual-custody approval tiers and sole-source exception handling.
-            </p>
-          </div>
+          <Badge variant="success" size="sm">Audited & Active</Badge>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -74,7 +171,7 @@ export const OrganizationSettingsView: React.FC = () => {
             value={soxThreshold}
             onChange={(e) => setSoxThreshold(Number(e.target.value))}
             prefixText="$"
-            helperText="Contracts above this amount trigger mandatory Form CS-8 Sole-Source waiver if < 3 bids."
+            helperText="Requisitions above this threshold trigger mandatory Form CS-8 Sole-Source waiver if < 3 bids."
           />
 
           <Input
@@ -83,7 +180,7 @@ export const OrganizationSettingsView: React.FC = () => {
             value={minBidsRequired}
             onChange={(e) => setMinBidsRequired(Number(e.target.value))}
             suffixText="Vendors"
-            helperText="RFQ requires at least this many independent vendor quotes to bypass sole-source hold."
+            helperText="Requisition requires at least this many independent vendor quotes to bypass sole-source hold."
           />
         </div>
 
@@ -97,10 +194,10 @@ export const OrganizationSettingsView: React.FC = () => {
             />
             <div>
               <p className="text-xs sm:text-sm font-medium text-[#17272A] dark:text-[#EBF1F0]">
-                Enforce Form CS-8 Sole-Source Justification Upload
+                Enforce Form CS-8 Sole-Source Justification Attestation
               </p>
               <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                Purchase orders exceeding the single-source limit will remain in FLAGGED state until a signed justification document is approved.
+                Purchase orders exceeding the single-source limit will remain in FLAGGED state until authorized by a Finance or Admin signatory.
               </p>
             </div>
           </label>
@@ -114,17 +211,192 @@ export const OrganizationSettingsView: React.FC = () => {
             />
             <div>
               <p className="text-xs sm:text-sm font-medium text-[#17272A] dark:text-[#EBF1F0]">
-                Mandatory Group Treasury Co-Sign on CapEx &gt; $100,000
+                Mandatory Dual Sign-off on Purchase Orders &gt; $100,000
               </p>
               <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                Requires both Strategic Sourcing Director and Treasury Officer authorization signatures.
+                Requires both Procurement Director and Treasury Approver signatures before ERP dispatch.
               </p>
             </div>
           </label>
         </div>
       </Card>
 
-      {/* 2. Enterprise Core ERP Synchronizers */}
+      {/* 2. Team Members & RBAC Roles */}
+      <Card padding="md" className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#C17C43]/10 text-[#C17C43] dark:bg-[#D48D55]/20 dark:text-[#D48D55]">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                Organization Roster & RBAC Permissions
+              </h2>
+              <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
+                {members.length} members with granular procurement authorization levels.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsInviteOpen(true)}
+            leftIcon={<UserPlus className="h-4 w-4" />}
+          >
+            Invite Member
+          </Button>
+        </div>
+
+        {/* Members Table */}
+        <div className="overflow-x-auto touch-scroll border border-[#DDE3E1] dark:border-[#24423D] rounded-xl">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#FAF9F6] dark:bg-[#162B27] border-b border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F]">
+              <tr>
+                <th className="px-4 py-3 font-semibold">User</th>
+                <th className="px-4 py-3 font-semibold">Department</th>
+                <th className="px-4 py-3 font-semibold">Authorization Role</th>
+                <th className="px-4 py-3 font-semibold">Joined</th>
+                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#DDE3E1] dark:divide-[#24423D] bg-white dark:bg-[#11211E]">
+              {members.map((m) => (
+                <tr key={m.uid} className="hover:bg-[#FAF9F6] dark:hover:bg-[#162B27]/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                      {m.displayName}
+                    </div>
+                    <div className="text-[11px] text-[#647A7B] dark:text-[#8BA39F] font-mono">
+                      {m.email}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-[#34484B] dark:text-[#C2D3CF]">
+                    {m.department || 'Procurement Operations'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge
+                      variant={
+                        m.role === 'ADMIN'
+                          ? 'danger'
+                          : m.role === 'FINANCE'
+                          ? 'warning'
+                          : m.role === 'APPROVER'
+                          ? 'primary'
+                          : 'default'
+                      }
+                      size="sm"
+                    >
+                      {m.role}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                    {m.joinedAt ? m.joinedAt.split('T')[0] : 'Active'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {canPerform('MANAGE_MEMBERS') && m.uid !== currentMember?.uid ? (
+                      <select
+                        value={m.role}
+                        onChange={(e) => handleRoleChange(m.uid, m.email, e.target.value as UserRole)}
+                        className="rounded border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#162B27] px-2 py-1 text-[11px] text-[#17272A] dark:text-[#EBF1F0]"
+                      >
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="PROCUREMENT_MANAGER">PROCUREMENT_MANAGER</option>
+                        <option value="BUYER">BUYER</option>
+                        <option value="APPROVER">APPROVER</option>
+                        <option value="FINANCE">FINANCE</option>
+                        <option value="AUDITOR">AUDITOR</option>
+                      </select>
+                    ) : (
+                      <span className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">Current User</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* 3. Immutable Audit Trail (Append-Only) */}
+      <Card padding="md" className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#1B6A4A]/10 text-[#1B6A4A] dark:bg-[#38B482]/20 dark:text-[#38B482]">
+              <History className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                  Immutable Procurement Audit Trail
+                </h2>
+                <Badge variant="success" size="sm">SOX SEC 404 Compliant</Badge>
+              </div>
+              <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
+                Cryptographically verifiable, append-only event ledger for internal and external auditors.
+              </p>
+            </div>
+          </div>
+
+          {/* Audit Category Filter */}
+          <div className="flex items-center gap-1.5 overflow-x-auto touch-scroll">
+            {['ALL', 'RFQ', 'BID', 'PURCHASE_ORDER', 'ORGANIZATION', 'MEMBER'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setAuditFilter(cat)}
+                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
+                  auditFilter === cat
+                    ? 'bg-[#173E38] text-white dark:bg-[#2E7A6F]'
+                    : 'bg-[#FAF9F6] dark:bg-[#162B27] text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A]'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Audit Log Entries */}
+        <div className="space-y-2 max-h-96 overflow-y-auto touch-scroll divide-y divide-[#DDE3E1] dark:divide-[#24423D]">
+          {filteredAuditEvents.length === 0 ? (
+            <p className="text-xs text-[#647A7B] dark:text-[#8BA39F] py-4 text-center">
+              No audit records match the current filter.
+            </p>
+          ) : (
+            filteredAuditEvents.map((ev) => (
+              <div key={ev.id} className="pt-2.5 pb-2 text-xs flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] font-bold text-[#173E38] dark:text-[#4EA89A] bg-[#FAF9F6] dark:bg-[#162B27] px-1.5 py-0.5 rounded border border-[#DDE3E1] dark:border-[#24423D]">
+                      {ev.action}
+                    </span>
+                    <Badge variant="default" size="sm">
+                      {ev.entityType}
+                    </Badge>
+                    <span className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                      by <strong className="text-[#17272A] dark:text-[#EBF1F0]">{ev.actorEmail}</strong> ({ev.actorRole})
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#17272A] dark:text-[#EBF1F0] font-medium">
+                    {ev.summary}
+                  </p>
+                  {ev.details && (
+                    <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F] italic">
+                      {ev.details}
+                    </p>
+                  )}
+                </div>
+
+                <div className="text-[10px] font-mono text-[#647A7B] dark:text-[#8BA39F] whitespace-nowrap sm:text-right">
+                  {new Date(ev.timestamp).toLocaleString()}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+
+      {/* 4. Enterprise Core ERP Synchronizers */}
       <Card padding="md" className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -155,7 +427,7 @@ export const OrganizationSettingsView: React.FC = () => {
                   SAP S/4HANA Cloud (Procurement Core)
                 </p>
                 <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                  Endpoint: https://sap-prd.corp.internal/sap/opu/odata/ • Last Synced: 2 mins ago
+                  Endpoint: https://sap-prd.corp.internal/sap/opu/odata/ • Live
                 </p>
               </div>
             </div>
@@ -191,6 +463,57 @@ export const OrganizationSettingsView: React.FC = () => {
           </div>
         </div>
       </Card>
+
+      {/* Invite Member Modal */}
+      {isInviteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#11211E] border border-[#DDE3E1] dark:border-[#24423D] p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#17272A] dark:text-[#EBF1F0]">
+              Invite Member to {organization?.name || 'Workspace'}
+            </h3>
+            {inviteStatus && (
+              <p className="text-xs text-[#1B6A4A] dark:text-[#38B482] font-medium">{inviteStatus}</p>
+            )}
+            <form onSubmit={handleInviteSubmit} className="space-y-3.5">
+              <Input
+                label="Corporate Email"
+                type="email"
+                required
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="colleague@enterprise.com"
+              />
+              <Select
+                label="Assigned Authorization Role"
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value as UserRole)}
+                options={[
+                  { value: 'ADMIN', label: 'ADMIN (Full Administration & SOX Override)' },
+                  { value: 'PROCUREMENT_MANAGER', label: 'PROCUREMENT_MANAGER (RFQ & PO Sign-off)' },
+                  { value: 'BUYER', label: 'BUYER (Requisitions & Vendor Bids)' },
+                  { value: 'APPROVER', label: 'APPROVER (Budget & Financial Authority)' },
+                  { value: 'FINANCE', label: 'FINANCE (Form CS-8 Waivers & Treasury)' },
+                  { value: 'AUDITOR', label: 'AUDITOR (Read-only Fiduciary Oversight)' },
+                ]}
+              />
+              <Input
+                label="Department"
+                value={inviteDept}
+                onChange={(e) => setInviteDept(e.target.value)}
+                placeholder="e.g. Infrastructure Sourcing"
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="secondary" size="sm" type="button" onClick={() => setIsInviteOpen(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" size="sm" type="submit">
+                  Dispatch Invitation
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

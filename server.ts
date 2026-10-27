@@ -53,6 +53,8 @@ Keep responses concise, executive-ready, and formatted with clean Markdown headi
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: `Context:
+Organization: ${context?.organizationName || 'Synthetix Global Corp'}
+Active Signatory Role: ${context?.userRole || 'Signatory'}
 Active RFQs: ${JSON.stringify(
           (context?.rfqs || []).map((r: any) => ({
             id: r.rfqNumber,

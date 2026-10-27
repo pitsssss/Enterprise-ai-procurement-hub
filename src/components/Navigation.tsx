@@ -1,6 +1,7 @@
 import React from 'react';
 import { Logo } from './brand/Logo';
 import { Badge } from './ui/Badge';
+import { useAuth } from '../contexts/AuthContext';
 import {
   TrendingUp,
   FileText,
@@ -61,6 +62,10 @@ export const Navigation: React.FC<NavigationProps> = ({
   unreadNotificationsCount = 2,
   onSwitchToPublicSite,
 }) => {
+  const { user, profile, organization, userRole } = useAuth();
+  const userName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Enterprise Signatory';
+  const userInitials = (userName || 'SC').slice(0, 2).toUpperCase();
+
   const getSectionTitle = () => {
     switch (activeTab) {
       case 'overview':
@@ -141,11 +146,13 @@ export const Navigation: React.FC<NavigationProps> = ({
         {/* Workspace Context Badge */}
         <div className="px-4 pt-3 pb-2">
           <div className="flex items-center justify-between rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] px-3 py-2 border border-[#DDE3E1] dark:border-[#24423D] text-[11px]">
-            <div className="flex items-center gap-1.5 font-medium text-[#173E38] dark:text-[#4EA89A]">
-              <span className="h-2 w-2 rounded-full bg-[#1B6A4A] dark:bg-[#38B482]" />
-              <span className="truncate">Production Workspace</span>
+            <div className="flex items-center gap-1.5 font-medium text-[#173E38] dark:text-[#4EA89A] min-w-0">
+              <span className="h-2 w-2 rounded-full bg-[#1B6A4A] dark:bg-[#38B482] shrink-0" />
+              <span className="truncate">{organization?.name || 'Synthetix Global Corp'}</span>
             </div>
-            <span className="font-mono text-[10px] text-[#647A7B] dark:text-[#8BA39F]">US-EAST</span>
+            <span className="font-mono text-[10px] text-[#647A7B] dark:text-[#8BA39F] shrink-0 uppercase font-semibold">
+              {userRole}
+            </span>
           </div>
         </div>
 
@@ -242,12 +249,28 @@ export const Navigation: React.FC<NavigationProps> = ({
 
         {/* User Identity Footer */}
         <div className="flex items-center gap-3 border-t border-[#DDE3E1] dark:border-[#24423D] p-3.5 bg-white dark:bg-[#11211E]">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#173E38] text-xs font-bold text-white shadow-2xs">
-            SC
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="truncate text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">Sarah Chen</p>
-            <p className="truncate text-[10px] text-[#647A7B] dark:text-[#8BA39F]">Strategic Sourcing Director</p>
+          {user?.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt={userName}
+              className="h-8 w-8 rounded-lg object-cover border border-[#DDE3E1] dark:border-[#24423D] shrink-0"
+            />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#173E38] text-xs font-bold text-white shadow-2xs">
+              {userInitials}
+            </div>
+          )}
+          <div
+            className="flex-1 overflow-hidden cursor-pointer"
+            onClick={() => setActiveTab('profile')}
+            title="View Signatory Profile & Delegations"
+          >
+            <p className="truncate text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0] hover:text-[#173E38] dark:hover:text-[#4EA89A] transition-colors">
+              {userName}
+            </p>
+            <p className="truncate text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
+              {profile?.title || `${userRole} Signatory`}
+            </p>
           </div>
           <button
             onClick={onToggleTheme}

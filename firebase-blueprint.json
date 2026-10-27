@@ -1,0 +1,170 @@
+{
+  "entities": {
+    "organizations": {
+      "collection": "organizations",
+      "path": "organizations/{orgId}",
+      "description": "Tenant enterprise organizations with isolated procurement state",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "slug": { "type": "string", "required": true },
+        "defaultCurrency": { "type": "string", "required": true },
+        "soxComplianceEnabled": { "type": "boolean", "required": true },
+        "soxThresholdUSD": { "type": "number", "required": true },
+        "createdAt": { "type": "string", "required": true },
+        "ownerUid": { "type": "string", "required": true }
+      }
+    },
+    "organizationMembers": {
+      "collection": "members",
+      "path": "organizations/{orgId}/members/{userId}",
+      "description": "User memberships and role assignments within an organization",
+      "fields": {
+        "uid": { "type": "string", "required": true },
+        "orgId": { "type": "string", "required": true },
+        "email": { "type": "string", "required": true },
+        "displayName": { "type": "string", "required": true },
+        "role": { "type": "string", "required": true, "enum": ["ADMIN", "PROCUREMENT_MANAGER", "BUYER", "APPROVER", "FINANCE", "AUDITOR"] },
+        "department": { "type": "string", "required": false },
+        "joinedAt": { "type": "string", "required": true }
+      }
+    },
+    "rfqs": {
+      "collection": "rfqs",
+      "path": "organizations/{orgId}/rfqs/{rfqId}",
+      "description": "Requests for Quotation issued by buyers",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "orgId": { "type": "string", "required": true },
+        "rfqNumber": { "type": "string", "required": true },
+        "title": { "type": "string", "required": true },
+        "category": { "type": "string", "required": true },
+        "department": { "type": "string", "required": true },
+        "budget": { "type": "number", "required": true },
+        "estTotalValue": { "type": "number", "required": true },
+        "status": { "type": "string", "required": true, "enum": ["DRAFT", "OPEN_FOR_BIDS", "EVALUATION", "AWARDED", "CANCELLED"] },
+        "deadline": { "type": "string", "required": true },
+        "invitedVendorsCount": { "type": "number", "required": true },
+        "bidsReceivedCount": { "type": "number", "required": true },
+        "createdBy": { "type": "string", "required": true },
+        "createdAt": { "type": "string", "required": true },
+        "awardedBidId": { "type": "string", "required": false },
+        "awardedVendorName": { "type": "string", "required": false },
+        "awardedAt": { "type": "string", "required": false },
+        "policyNotes": { "type": "string", "required": false },
+        "lineItems": { "type": "array", "required": true }
+      }
+    },
+    "vendors": {
+      "collection": "vendors",
+      "path": "organizations/{orgId}/vendors/{vendorId}",
+      "description": "Approved and strategic vendor database",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "orgId": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "tier": { "type": "string", "required": true, "enum": ["TIER_1_STRATEGIC", "PREFERRED", "APPROVED", "PROBATIONARY"] },
+        "category": { "type": "string", "required": true },
+        "country": { "type": "string", "required": true },
+        "activeContractsCount": { "type": "number", "required": true },
+        "onTimeDeliveryRate": { "type": "number", "required": true },
+        "qualityScore": { "type": "number", "required": true },
+        "esgScore": { "type": "number", "required": true },
+        "status": { "type": "string", "required": true, "enum": ["ACTIVE", "RESTRICTED", "PENDING_AUDIT"] },
+        "contactEmail": { "type": "string", "required": true },
+        "annualSpendUSD": { "type": "number", "required": true }
+      }
+    },
+    "bids": {
+      "collection": "bids",
+      "path": "organizations/{orgId}/bids/{bidId}",
+      "description": "Supplier quotation submissions against an RFQ",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "orgId": { "type": "string", "required": true },
+        "rfqId": { "type": "string", "required": true },
+        "vendorId": { "type": "string", "required": true },
+        "vendorName": { "type": "string", "required": true },
+        "unitPriceTotal": { "type": "number", "required": true },
+        "leadTimeWeeks": { "type": "number", "required": true },
+        "warrantyMonths": { "type": "number", "required": true },
+        "esgScore": { "type": "number", "required": true },
+        "complianceRate": { "type": "number", "required": true },
+        "riskLevel": { "type": "string", "required": true, "enum": ["LOW", "MEDIUM", "HIGH"] },
+        "aiRecommendationScore": { "type": "number", "required": true },
+        "keyDifferentiator": { "type": "string", "required": true },
+        "quoteRef": { "type": "string", "required": true },
+        "submissionDate": { "type": "string", "required": true }
+      }
+    },
+    "purchaseOrders": {
+      "collection": "pos",
+      "path": "organizations/{orgId}/pos/{poId}",
+      "description": "Legally bound purchase orders and SOX approval workflows",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "orgId": { "type": "string", "required": true },
+        "poNumber": { "type": "string", "required": true },
+        "rfqRef": { "type": "string", "required": true },
+        "vendorName": { "type": "string", "required": true },
+        "amount": { "type": "number", "required": true },
+        "currency": { "type": "string", "required": true },
+        "status": { "type": "string", "required": true, "enum": ["PENDING_APPROVAL", "APPROVED", "DISPATCHED", "DELIVERED", "FLAGGED"] },
+        "issueDate": { "type": "string", "required": true },
+        "approverRole": { "type": "string", "required": true },
+        "paymentTerms": { "type": "string", "required": true },
+        "complianceWarning": { "type": "string", "required": false },
+        "complianceCleared": { "type": "boolean", "required": false },
+        "soxHold": { "type": "boolean", "required": false },
+        "waiverSignedBy": { "type": "string", "required": false },
+        "waiverSignedAt": { "type": "string", "required": false },
+        "waiverJustification": { "type": "string", "required": false },
+        "approvedBy": { "type": "string", "required": false },
+        "approvedAt": { "type": "string", "required": false }
+      }
+    },
+    "auditEvents": {
+      "collection": "auditEvents",
+      "path": "organizations/{orgId}/auditEvents/{eventId}",
+      "description": "Immutable, append-only SOX procurement audit logs",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "orgId": { "type": "string", "required": true },
+        "actorId": { "type": "string", "required": true },
+        "actorEmail": { "type": "string", "required": true },
+        "actorRole": { "type": "string", "required": true },
+        "action": { "type": "string", "required": true },
+        "entityType": { "type": "string", "required": true },
+        "entityId": { "type": "string", "required": true },
+        "summary": { "type": "string", "required": true },
+        "details": { "type": "string", "required": false },
+        "timestamp": { "type": "string", "required": true }
+      }
+    },
+    "userProfiles": {
+      "collection": "userProfiles",
+      "path": "userProfiles/{userId}",
+      "description": "Global user identity, current workspace, and UI preferences",
+      "fields": {
+        "uid": { "type": "string", "required": true },
+        "email": { "type": "string", "required": true },
+        "displayName": { "type": "string", "required": true },
+        "photoURL": { "type": "string", "required": false },
+        "currentOrgId": { "type": "string", "required": true },
+        "language": { "type": "string", "required": true },
+        "theme": { "type": "string", "required": true },
+        "department": { "type": "string", "required": false },
+        "title": { "type": "string", "required": false },
+        "updatedAt": { "type": "string", "required": true }
+      }
+    }
+  },
+  "roles": {
+    "ADMIN": "Full tenant administration, membership invites, SOX rule configuration, and emergency waiver approval",
+    "PROCUREMENT_MANAGER": "RFQ approvals, bid evaluation sign-offs, purchase order approvals, vendor onboarding",
+    "BUYER": "Create RFQs, manage line items, invite suppliers, collect bids, draft purchase orders",
+    "APPROVER": "Executive budget review and financial approval of purchase orders up to delegation limits",
+    "FINANCE": "SOX compliance audit, Form CS-8 Sole-Source waiver reviews, payment disbursement release",
+    "AUDITOR": "Read-only access to all procurement records, contracts, bidding logs, and immutable audit trail"
+  }
+}
