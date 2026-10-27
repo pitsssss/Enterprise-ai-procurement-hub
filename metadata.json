@@ -1,0 +1,6 @@
+{
+  "name": "Synthetix Sourcing - Enterprise AI Procurement Hub",
+  "description": "Autonomous corporate procurement copilot for RFQ management, vendor bid scoring matrices, SOX compliance approvals, and price trade-off analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
