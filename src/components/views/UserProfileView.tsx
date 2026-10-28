@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -20,16 +21,24 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserRole } from '../../types/procurement';
+import { setAppLanguage, SupportedLanguage } from '../../i18n';
+import { formatCurrency } from '../../lib/formatters';
 
 export const UserProfileView: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { user, profile, organization, currentMember, userRole, switchRole, updateProfileData, signOutUser } = useAuth();
   const [displayName, setDisplayName] = useState(profile?.displayName || user?.displayName || 'Enterprise Signatory');
   const [department, setDepartment] = useState(profile?.department || 'Global Sourcing & Supply Chain');
   const [title, setTitle] = useState(profile?.title || 'VP of Strategic Procurement');
-  const [language, setLanguage] = useState<'en' | 'ar'>(profile?.language || 'en');
+  const [language, setLanguage] = useState<SupportedLanguage>((i18n.language === 'ar' ? 'ar' : 'en'));
   const [selectedRole, setSelectedRole] = useState<UserRole>(userRole);
   const [isUpdating, setIsUpdating] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  const handleLanguageSelect = async (newLang: SupportedLanguage) => {
+    setLanguage(newLang);
+    await setAppLanguage(newLang);
+  };
 
   const handleSaveProfile = async () => {
     setIsUpdating(true);
@@ -46,10 +55,10 @@ export const UserProfileView: React.FC = () => {
         await switchRole(selectedRole);
       }
 
-      setSaveMessage('Credentials & Authorization Level Updated');
+      setSaveMessage(t('profile.saveSuccess'));
       setTimeout(() => setSaveMessage(null), 2500);
     } catch (err: any) {
-      setSaveMessage(`Error updating profile: ${err.message}`);
+      setSaveMessage(`${t('common.error')}: ${err.message}`);
     } finally {
       setIsUpdating(false);
     }
@@ -93,10 +102,10 @@ export const UserProfileView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#DDE3E1] dark:border-[#24423D] pb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
-            Signatory Profile & Delegated Authority
+            {t('profile.title')}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-[#647A7B] dark:text-[#8BA39F]">
-            Corporate signatory credentials, single-source approval limits, and multi-factor hardware security.
+            {t('profile.subtitle')}
           </p>
         </div>
 
@@ -108,16 +117,16 @@ export const UserProfileView: React.FC = () => {
             isLoading={isUpdating}
             leftIcon={<CheckCircle2 className="h-4 w-4" />}
           >
-            {saveMessage || 'Save Changes'}
+            {saveMessage || t('common.save')}
           </Button>
 
           <Button
             variant="secondary"
             size="sm"
             onClick={signOutUser}
-            leftIcon={<LogOut className="h-4 w-4" />}
+            leftIcon={<LogOut className="h-4 w-4 rtl:rotate-180" />}
           >
-            Sign Out
+            {t('profile.btnSignOut')}
           </Button>
         </div>
       </div>
@@ -143,24 +152,26 @@ export const UserProfileView: React.FC = () => {
                   {displayName}
                 </h2>
                 <Badge variant={getRoleBadgeVariant(userRole)} size="sm">
-                  {userRole}
+                  {t(`roles.${userRole}`, userRole)}
                 </Badge>
               </div>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
                 {title} • {department}
               </p>
-              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F] font-mono">
-                {user?.email || 'authenticated-session'} • Organization: {organization?.name || 'Synthetix Global Corp'}
+              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                <bdi dir="ltr">{user?.email || 'authenticated-session'}</bdi> • {organization?.name || 'Synthetix Global Corp'}
               </p>
             </div>
           </div>
 
-          <div className="text-right sm:border-l sm:border-[#DDE3E1] sm:dark:border-[#24423D] sm:pl-5">
-            <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">Delegated Authorization Ceiling</p>
+          <div className="text-left rtl:text-right sm:border-l rtl:sm:border-l-0 rtl:sm:border-r sm:border-[#DDE3E1] sm:dark:border-[#24423D] sm:pl-5 rtl:sm:pl-0 rtl:sm:pr-5">
+            <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">{t('profile.currentLimit')}</p>
             <p className="text-xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]">
-              ${getDelegatedLimit(userRole).toLocaleString()} USD
+              {formatCurrency(getDelegatedLimit(userRole))}
             </p>
-            <span className="text-[10px] text-[#1B6A4A] dark:text-[#38B482]">Dual-Signoff required above ceiling</span>
+            <span className="text-[10px] text-[#1B6A4A] dark:text-[#38B482]">
+              {t('org.soxExplanation')}
+            </span>
           </div>
         </div>
 
@@ -169,10 +180,10 @@ export const UserProfileView: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0] flex items-center gap-1.5">
               <UserCheck className="h-4 w-4 text-[#C17C43] dark:text-[#D48D55]" />
-              Simulate Role Delegation (Active RBAC Testing)
+              {t('profile.roleSwitcher')}
             </span>
             <span className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
-              Directly tests Firestore security permissions
+              {t('profile.roleNotice')}
             </span>
           </div>
 
@@ -188,7 +199,7 @@ export const UserProfileView: React.FC = () => {
                     : 'bg-white dark:bg-[#11211E] text-[#647A7B] dark:text-[#8BA39F] border-[#DDE3E1] dark:border-[#24423D] hover:bg-[#FAF9F6]'
                 }`}
               >
-                {r}
+                {t(`roles.${r}`, r)}
               </button>
             ))}
           </div>
@@ -196,30 +207,30 @@ export const UserProfileView: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[#DDE3E1] dark:border-[#24423D]">
           <Input
-            label="Designated Signatory Name"
+            label={t('profile.fieldSignatoryName')}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
           />
 
           <Input
-            label="Corporate Title & Designation"
+            label={t('profile.fieldTitle')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
 
           <Input
-            label="Requesting Department / Cost Center"
+            label={t('profile.fieldDept')}
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
           />
 
           <Select
-            label="Interface Localization & Language"
+            label={t('profile.fieldLanguage')}
             value={language}
-            onChange={(e) => setLanguage(e.target.value as 'en' | 'ar')}
+            onChange={(e) => handleLanguageSelect(e.target.value as SupportedLanguage)}
             options={[
-              { value: 'en', label: 'English (US Fiduciary Standard)' },
-              { value: 'ar', label: 'العربية (Arabic Localization)' },
+              { value: 'en', label: t('profile.optEnglish') },
+              { value: 'ar', label: t('profile.optArabic') },
             ]}
           />
         </div>
@@ -234,14 +245,14 @@ export const UserProfileView: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                Hardware Security & FIDO2 Enterprise Tokens
+                {t('profile.hardwareSecurity')}
               </h2>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                Hardware authentication enforcing SOX electronic signature non-repudiation.
+                {t('profile.hardwareDesc')}
               </p>
             </div>
           </div>
-          <Badge variant="success" size="sm" dot>FIDO2 Hardware Bound</Badge>
+          <Badge variant="success" size="sm" dot>{t('profile.fidoHardwareBound')}</Badge>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -249,11 +260,11 @@ export const UserProfileView: React.FC = () => {
             <div className="flex items-center gap-2.5">
               <Laptop className="h-4 w-4 text-[#173E38] dark:text-[#4EA89A]" />
               <div>
-                <p className="text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">YubiKey 5C NFC (Primary)</p>
-                <p className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">Serial: #YK-9481-229 • Active</p>
+                <p className="text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">{t('profile.yubikey')}</p>
+                <p className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">{t('profile.yubikeySerial')}</p>
               </div>
             </div>
-            <Badge variant="success" size="sm">Verified</Badge>
+            <Badge variant="success" size="sm">{t('common.verified')}</Badge>
           </div>
 
           <div className="p-3 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6] dark:bg-[#162B27] flex items-center justify-between">

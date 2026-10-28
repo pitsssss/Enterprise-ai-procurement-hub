@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Logo } from '../brand/Logo';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -16,6 +17,8 @@ export const ContactSalesModal: React.FC<ContactSalesModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
@@ -52,8 +55,8 @@ export const ContactSalesModal: React.FC<ContactSalesModalProps> = ({
       >
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] p-1 rounded-md"
-          aria-label="Close dialog"
+          className="absolute top-5 right-5 rtl:right-auto rtl:left-5 text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] p-1 rounded-md"
+          aria-label={t('common.close')}
         >
           <X className="h-4 w-4" />
         </button>
@@ -64,10 +67,10 @@ export const ContactSalesModal: React.FC<ContactSalesModalProps> = ({
               <CheckCircle2 className="h-8 w-8" />
             </div>
             <h3 className="text-lg font-bold text-[#17272A] dark:text-[#EBF1F0]">
-              Consultation Scheduled
+              {isArabic ? 'تم تأكيد طلب الجلسة الاستشارية' : 'Consultation Scheduled'}
             </h3>
             <p className="text-xs sm:text-sm text-[#647A7B] dark:text-[#8BA39F] max-w-sm mx-auto">
-              A Strategic Sourcing Principal will review your procurement volume ({annualSpend}) and connect within 1 business day.
+              {t('contactSales.success')}
             </p>
           </div>
         ) : (
@@ -76,10 +79,10 @@ export const ContactSalesModal: React.FC<ContactSalesModalProps> = ({
               <Logo size="md" variant="compact" />
               <div>
                 <h2 className="text-base sm:text-lg font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
-                  Enterprise Architecture Consultation
+                  {t('contactSales.title')}
                 </h2>
                 <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                  Discuss deployment options, ERP connectors, and custom SOX policy thresholds.
+                  {t('contactSales.subtitle')}
                 </p>
               </div>
             </div>
@@ -87,14 +90,14 @@ export const ContactSalesModal: React.FC<ContactSalesModalProps> = ({
             <form onSubmit={handleSubmit} className="mt-5 space-y-3.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
-                  label="Executive Name"
+                  label={t('contactSales.fieldName')}
                   required
-                  placeholder="e.g. Marcus Vance"
+                  placeholder={isArabic ? 'مثال: ماركوس فانس' : 'e.g. Marcus Vance'}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
                 <Input
-                  label="Corporate Email"
+                  label={t('contactSales.fieldEmail')}
                   type="email"
                   required
                   placeholder="m.vance@fortune500.com"
@@ -105,14 +108,14 @@ export const ContactSalesModal: React.FC<ContactSalesModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
-                  label="Organization / Company"
+                  label={t('contactSales.fieldCompany')}
                   required
-                  placeholder="e.g. Apex Global Industries"
+                  placeholder={isArabic ? 'مثال: شركة الصناعات العالمية' : 'e.g. Apex Global Industries'}
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                 />
                 <Select
-                  label="Annual Procurement Spend"
+                  label={t('contactSales.fieldSpend')}
                   value={annualSpend}
                   onChange={(e) => setAnnualSpend(e.target.value)}
                   options={[
@@ -125,7 +128,7 @@ export const ContactSalesModal: React.FC<ContactSalesModalProps> = ({
               </div>
 
               <Select
-                label="Primary ERP / SCM Core"
+                label={isArabic ? 'نظام ERP / السجلات الرئيسي' : 'Primary ERP / SCM Core'}
                 value={erpSystem}
                 onChange={(e) => setErpSystem(e.target.value)}
                 options={[
@@ -133,29 +136,29 @@ export const ContactSalesModal: React.FC<ContactSalesModalProps> = ({
                   { value: 'Workday Financials', label: 'Workday Financial Management' },
                   { value: 'Oracle Cloud ERP', label: 'Oracle Cloud ERP / NetSuite' },
                   { value: 'Coupa', label: 'Coupa Business Spend Management' },
-                  { value: 'Custom ERP / REST', label: 'Custom In-House Architecture' },
+                  { value: 'Custom ERP / REST', label: isArabic ? 'نظام مالي مؤسسي خاص' : 'Custom In-House Architecture' },
                 ]}
               />
 
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-[#34484B] dark:text-[#C2D3CF]">
-                  Specific Requirements or Policy Challenges
+                <label className="block text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                  {t('contactSales.fieldNotes')}
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="e.g. Automated dual-authorization enforcement, multi-supplier quote scoring, custom SOX form workflows..."
-                  className="w-full rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#162B27] p-2.5 text-xs text-[#17272A] dark:text-[#EBF1F0] placeholder-[#92A4A3] focus:outline-none focus:border-[#173E38] dark:focus:border-[#2E7A6F] focus:ring-1 focus:ring-[#173E38]"
+                  placeholder={isArabic ? 'وضح متطلبات التوريد وحجم العمليات ونقاط التكامل المطلوبة...' : 'Specify volume constraints, SOX thresholds, or ERP migration timelines...'}
+                  className="w-full rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#162B27] p-2.5 text-xs text-[#17272A] dark:text-[#EBF1F0] focus:border-[#173E38] focus:outline-none"
                 />
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2.5">
                 <Button variant="secondary" size="md" onClick={onClose} type="button">
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
-                <Button variant="accent" size="md" type="submit" isLoading={isSubmitting}>
-                  Request Enterprise Briefing
+                <Button variant="primary" size="md" type="submit" isLoading={isSubmitting}>
+                  {t('contactSales.btnSubmit')}
                 </Button>
               </div>
             </form>

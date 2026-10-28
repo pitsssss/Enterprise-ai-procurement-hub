@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { Select } from '../ui/Select';
+import { formatCurrency, formatDate } from '../../lib/formatters';
 import {
   ShieldCheck,
   Building,
@@ -31,6 +33,8 @@ import {
 } from '../../services/firestoreService';
 
 export const OrganizationSettingsView: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
   const { organization, currentMember, userRole, canPerform } = useAuth();
   const [soxThreshold, setSoxThreshold] = useState(organization?.soxThresholdUSD || 250000);
   const [minBidsRequired, setMinBidsRequired] = useState(3);
@@ -82,14 +86,14 @@ export const OrganizationSettingsView: React.FC = () => {
           role: userRole,
         }
       );
-      setInviteStatus(`Invitation dispatched to ${inviteEmail}`);
+      setInviteStatus(isArabic ? `تم إرسال الدعوة إلى ${inviteEmail}` : `Invitation dispatched to ${inviteEmail}`);
       setInviteEmail('');
       setTimeout(() => {
         setIsInviteOpen(false);
         setInviteStatus(null);
       }, 1500);
     } catch (err: any) {
-      setInviteStatus(`Failed to invite: ${err.message}`);
+      setInviteStatus(isArabic ? `فشل إرسال الدعوة: ${err.message}` : `Failed to invite: ${err.message}`);
     }
   };
 
@@ -124,12 +128,14 @@ export const OrganizationSettingsView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
-              Enterprise Governance & Workspace Administration
+              {t('org.title')}
             </h1>
-            <Badge variant="primary" size="sm">Multi-Tenant</Badge>
+            <Badge variant="primary" size="sm">
+              {isArabic ? 'متعدد المستأجرين' : 'Multi-Tenant'}
+            </Badge>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-[#647A7B] dark:text-[#8BA39F]">
-            Organization: <strong className="text-[#17272A] dark:text-[#EBF1F0]">{organization?.name || 'Synthetix Global Corp'}</strong> ({orgId}) • Role-Based Access Control
+            {t('org.orgName')}: <strong className="text-[#17272A] dark:text-[#EBF1F0]">{organization?.name || 'Synthetix Global Corp'}</strong> (<bdi dir="ltr">{orgId}</bdi>)
           </p>
         </div>
 
@@ -140,7 +146,7 @@ export const OrganizationSettingsView: React.FC = () => {
             onClick={handleSavePolicies}
             leftIcon={<CheckCircle2 className="h-4 w-4" />}
           >
-            {savedSuccess ? 'Policies Synchronized' : 'Save Policies'}
+            {savedSuccess ? (isArabic ? 'تمت مزامنة السياسات' : 'Policies Synchronized') : t('common.save')}
           </Button>
         )}
       </div>
@@ -154,33 +160,35 @@ export const OrganizationSettingsView: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                SOX Section 404 Dual-Authorization Engine
+                {t('org.soxSection')}
               </h2>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                Statutory dual-custody approval tiers and sole-source waiver enforcement.
+                {t('org.soxExplanation')}
               </p>
             </div>
           </div>
-          <Badge variant="success" size="sm">Audited & Active</Badge>
+          <Badge variant="success" size="sm">
+            {isArabic ? 'مدقق ونشط' : 'Audited & Active'}
+          </Badge>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
           <Input
-            label="Single-Source Escalation Threshold (USD)"
+            label={t('org.soxThreshold')}
             type="number"
             value={soxThreshold}
             onChange={(e) => setSoxThreshold(Number(e.target.value))}
             prefixText="$"
-            helperText="Requisitions above this threshold trigger mandatory Form CS-8 Sole-Source waiver if < 3 bids."
+            helperText={isArabic ? 'الطلبات التي تتجاوز هذا الحد تتطلب نموذج إعفاء CS-8 إذا كانت العروض أقل من 3.' : 'Requisitions above this threshold trigger mandatory Form CS-8 Sole-Source waiver if < 3 bids.'}
           />
 
           <Input
-            label="Minimum Competitive Bids for Direct Award"
+            label={isArabic ? 'الحد الأدنى لعروض المنافسة للترسية المباشرة' : 'Minimum Competitive Bids for Direct Award'}
             type="number"
             value={minBidsRequired}
             onChange={(e) => setMinBidsRequired(Number(e.target.value))}
-            suffixText="Vendors"
-            helperText="Requisition requires at least this many independent vendor quotes to bypass sole-source hold."
+            suffixText={isArabic ? 'موردين' : 'Vendors'}
+            helperText={isArabic ? 'يتطلب الطلب هذا العدد على الأقل من عروض الموردين المستقلين لتجاوز تعليق المورد الوحيد.' : 'Requisition requires at least this many independent vendor quotes to bypass sole-source hold.'}
           />
         </div>
 
@@ -194,10 +202,10 @@ export const OrganizationSettingsView: React.FC = () => {
             />
             <div>
               <p className="text-xs sm:text-sm font-medium text-[#17272A] dark:text-[#EBF1F0]">
-                Enforce Form CS-8 Sole-Source Justification Attestation
+                {t('org.soxToggle')}
               </p>
               <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                Purchase orders exceeding the single-source limit will remain in FLAGGED state until authorized by a Finance or Admin signatory.
+                {isArabic ? 'تبقى أوامر الشراء المتجاوزة لحد الصلاحيات معلقة حتى يعتمدها مفوض مالي أو إداري.' : 'Purchase orders exceeding the single-source limit will remain in FLAGGED state until authorized by a Finance or Admin signatory.'}
               </p>
             </div>
           </label>
@@ -211,10 +219,10 @@ export const OrganizationSettingsView: React.FC = () => {
             />
             <div>
               <p className="text-xs sm:text-sm font-medium text-[#17272A] dark:text-[#EBF1F0]">
-                Mandatory Dual Sign-off on Purchase Orders &gt; $100,000
+                {isArabic ? 'اعتماد ثنائي إلزامي على أوامر الشراء > $100,000' : 'Mandatory Dual Sign-off on Purchase Orders > $100,000'}
               </p>
               <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                Requires both Procurement Director and Treasury Approver signatures before ERP dispatch.
+                {isArabic ? 'يتطلب توقيع مدير المشتريات ومسؤول الخزينة والمالية قبل إرسال الأمر للنظام.' : 'Requires both Procurement Director and Treasury Approver signatures before ERP dispatch.'}
               </p>
             </div>
           </label>
@@ -230,10 +238,10 @@ export const OrganizationSettingsView: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                Organization Roster & RBAC Permissions
+                {t('org.membersTitle')}
               </h2>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                {members.length} members with granular procurement authorization levels.
+                {members.length} {isArabic ? 'مفوضين بصلاحيات مشتريات محددة' : 'members with granular procurement authorization levels.'}
               </p>
             </div>
           </div>
@@ -244,20 +252,20 @@ export const OrganizationSettingsView: React.FC = () => {
             onClick={() => setIsInviteOpen(true)}
             leftIcon={<UserPlus className="h-4 w-4" />}
           >
-            Invite Member
+            {isArabic ? 'دعوة مفوض جديد' : 'Invite Member'}
           </Button>
         </div>
 
         {/* Members Table */}
         <div className="overflow-x-auto touch-scroll border border-[#DDE3E1] dark:border-[#24423D] rounded-xl">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left rtl:text-right text-xs">
             <thead className="bg-[#FAF9F6] dark:bg-[#162B27] border-b border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F]">
               <tr>
-                <th className="px-4 py-3 font-semibold">User</th>
-                <th className="px-4 py-3 font-semibold">Department</th>
-                <th className="px-4 py-3 font-semibold">Authorization Role</th>
-                <th className="px-4 py-3 font-semibold">Joined</th>
-                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                <th className="px-4 py-3 font-semibold">{t('org.colMember')}</th>
+                <th className="px-4 py-3 font-semibold">{t('org.colDept')}</th>
+                <th className="px-4 py-3 font-semibold">{t('org.colRole')}</th>
+                <th className="px-4 py-3 font-semibold">{t('org.colJoined')}</th>
+                <th className="px-4 py-3 font-semibold text-right rtl:text-left">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#DDE3E1] dark:divide-[#24423D] bg-white dark:bg-[#11211E]">
@@ -268,11 +276,11 @@ export const OrganizationSettingsView: React.FC = () => {
                       {m.displayName}
                     </div>
                     <div className="text-[11px] text-[#647A7B] dark:text-[#8BA39F] font-mono">
-                      {m.email}
+                      <bdi dir="ltr">{m.email}</bdi>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-[#34484B] dark:text-[#C2D3CF]">
-                    {m.department || 'Procurement Operations'}
+                    {m.department || (isArabic ? 'عمليات التوريد' : 'Procurement Operations')}
                   </td>
                   <td className="px-4 py-3">
                     <Badge
@@ -287,28 +295,30 @@ export const OrganizationSettingsView: React.FC = () => {
                       }
                       size="sm"
                     >
-                      {m.role}
+                      {t(`roles.${m.role}`, m.role)}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                    {m.joinedAt ? m.joinedAt.split('T')[0] : 'Active'}
+                    {m.joinedAt ? <span dir="ltr">{formatDate(m.joinedAt.split('T')[0])}</span> : t('common.active')}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right rtl:text-left">
                     {canPerform('MANAGE_MEMBERS') && m.uid !== currentMember?.uid ? (
                       <select
                         value={m.role}
                         onChange={(e) => handleRoleChange(m.uid, m.email, e.target.value as UserRole)}
                         className="rounded border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#162B27] px-2 py-1 text-[11px] text-[#17272A] dark:text-[#EBF1F0]"
                       >
-                        <option value="ADMIN">ADMIN</option>
-                        <option value="PROCUREMENT_MANAGER">PROCUREMENT_MANAGER</option>
-                        <option value="BUYER">BUYER</option>
-                        <option value="APPROVER">APPROVER</option>
-                        <option value="FINANCE">FINANCE</option>
-                        <option value="AUDITOR">AUDITOR</option>
+                        <option value="ADMIN">{t('roles.ADMIN')}</option>
+                        <option value="PROCUREMENT_MANAGER">{t('roles.PROCUREMENT_MANAGER')}</option>
+                        <option value="BUYER">{t('roles.BUYER')}</option>
+                        <option value="APPROVER">{t('roles.APPROVER')}</option>
+                        <option value="FINANCE">{t('roles.FINANCE')}</option>
+                        <option value="AUDITOR">{t('roles.AUDITOR')}</option>
                       </select>
                     ) : (
-                      <span className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">Current User</span>
+                      <span className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                        {isArabic ? 'المستخدم الحالي' : 'Current User'}
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -328,12 +338,14 @@ export const OrganizationSettingsView: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                  Immutable Procurement Audit Trail
+                  {isArabic ? 'سجل التدقيق المالي الثابت' : 'Immutable Procurement Audit Trail'}
                 </h2>
-                <Badge variant="success" size="sm">SOX SEC 404 Compliant</Badge>
+                <Badge variant="success" size="sm">
+                  {isArabic ? 'متوافق مع SOX 404' : 'SOX SEC 404 Compliant'}
+                </Badge>
               </div>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                Cryptographically verifiable, append-only event ledger for internal and external auditors.
+                {isArabic ? 'سجل أحداث غير قابل للتعديل وموثق تشفيرياً للمدققين الداخليين والخارجيين.' : 'Cryptographically verifiable, append-only event ledger for internal and external auditors.'}
               </p>
             </div>
           </div>
@@ -350,7 +362,7 @@ export const OrganizationSettingsView: React.FC = () => {
                     : 'bg-[#FAF9F6] dark:bg-[#162B27] text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A]'
                 }`}
               >
-                {cat}
+                {cat === 'ALL' ? t('common.all') : cat}
               </button>
             ))}
           </div>
@@ -360,21 +372,22 @@ export const OrganizationSettingsView: React.FC = () => {
         <div className="space-y-2 max-h-96 overflow-y-auto touch-scroll divide-y divide-[#DDE3E1] dark:divide-[#24423D]">
           {filteredAuditEvents.length === 0 ? (
             <p className="text-xs text-[#647A7B] dark:text-[#8BA39F] py-4 text-center">
-              No audit records match the current filter.
+              {t('dashboard.noAuditEvents')}
             </p>
           ) : (
             filteredAuditEvents.map((ev) => (
               <div key={ev.id} className="pt-2.5 pb-2 text-xs flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] font-bold text-[#173E38] dark:text-[#4EA89A] bg-[#FAF9F6] dark:bg-[#162B27] px-1.5 py-0.5 rounded border border-[#DDE3E1] dark:border-[#24423D]">
+                    <span className="font-mono text-[10px] font-bold text-[#173E38] dark:text-[#4EA89A] bg-[#FAF9F6] dark:bg-[#162B27] px-1.5 py-0.5 rounded border border-[#DDE3E1] dark:border-[#24423D]" dir="ltr">
                       {ev.action}
                     </span>
                     <Badge variant="default" size="sm">
                       {ev.entityType}
                     </Badge>
                     <span className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                      by <strong className="text-[#17272A] dark:text-[#EBF1F0]">{ev.actorEmail}</strong> ({ev.actorRole})
+                      {isArabic ? 'بواسطة ' : 'by '}
+                      <strong className="text-[#17272A] dark:text-[#EBF1F0]"><bdi dir="ltr">{ev.actorEmail}</bdi></strong> ({t(`roles.${ev.actorRole}`, ev.actorRole)})
                     </span>
                   </div>
                   <p className="text-xs text-[#17272A] dark:text-[#EBF1F0] font-medium">
@@ -387,8 +400,8 @@ export const OrganizationSettingsView: React.FC = () => {
                   )}
                 </div>
 
-                <div className="text-[10px] font-mono text-[#647A7B] dark:text-[#8BA39F] whitespace-nowrap sm:text-right">
-                  {new Date(ev.timestamp).toLocaleString()}
+                <div className="text-[10px] font-mono text-[#647A7B] dark:text-[#8BA39F] whitespace-nowrap sm:text-right rtl:sm:text-left" dir="ltr">
+                  {new Date(ev.timestamp).toLocaleString(isArabic ? 'ar-SA' : 'en-US')}
                 </div>
               </div>
             ))
@@ -405,14 +418,16 @@ export const OrganizationSettingsView: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                Active ERP & Financial Connectors
+                {isArabic ? 'موصلات أنظمة ERP والأنظمة المالية النشطة' : 'Active ERP & Financial Connectors'}
               </h2>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                Bidirectional synchronization status with corporate systems of record.
+                {isArabic ? 'حالة المزامنة ثنائية الاتجاه مع السجلات المركزية للشركة.' : 'Bidirectional synchronization status with corporate systems of record.'}
               </p>
             </div>
           </div>
-          <Badge variant="success" size="sm" dot>2 Systems Live</Badge>
+          <Badge variant="success" size="sm" dot>
+            {isArabic ? 'نظامان متصلان مباشرة' : '2 Systems Live'}
+          </Badge>
         </div>
 
         <div className="space-y-3 pt-2">
@@ -427,12 +442,12 @@ export const OrganizationSettingsView: React.FC = () => {
                   SAP S/4HANA Cloud (Procurement Core)
                 </p>
                 <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                  Endpoint: https://sap-prd.corp.internal/sap/opu/odata/ • Live
+                  <bdi dir="ltr">Endpoint: https://sap-prd.corp.internal/sap/opu/odata/ • Live</bdi>
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="success" size="sm">Connected</Badge>
+              <Badge variant="success" size="sm">{isArabic ? 'متصل' : 'Connected'}</Badge>
               <Button variant="ghost" size="sm" leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
                 Ping
               </Button>
@@ -450,12 +465,12 @@ export const OrganizationSettingsView: React.FC = () => {
                   Workday Financial Management (General Ledger)
                 </p>
                 <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                  Syncs cost center allocations and dual-authorization approval hierarchies.
+                  {isArabic ? 'مزامنة تخصيصات مراكز التكلفة والتسلسل الهرمي للاعتماد الثنائي.' : 'Syncs cost center allocations and dual-authorization approval hierarchies.'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="success" size="sm">Connected</Badge>
+              <Badge variant="success" size="sm">{isArabic ? 'متصل' : 'Connected'}</Badge>
               <Button variant="ghost" size="sm" leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
                 Ping
               </Button>
@@ -469,14 +484,14 @@ export const OrganizationSettingsView: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#11211E] border border-[#DDE3E1] dark:border-[#24423D] p-6 shadow-2xl space-y-4">
             <h3 className="text-base font-bold text-[#17272A] dark:text-[#EBF1F0]">
-              Invite Member to {organization?.name || 'Workspace'}
+              {isArabic ? `دعوة مفوض إلى ${organization?.name || 'مساحة العمل'}` : `Invite Member to ${organization?.name || 'Workspace'}`}
             </h3>
             {inviteStatus && (
               <p className="text-xs text-[#1B6A4A] dark:text-[#38B482] font-medium">{inviteStatus}</p>
             )}
             <form onSubmit={handleInviteSubmit} className="space-y-3.5">
               <Input
-                label="Corporate Email"
+                label={isArabic ? 'البريد الإلكتروني المؤسسي' : 'Corporate Email'}
                 type="email"
                 required
                 value={inviteEmail}
@@ -484,30 +499,30 @@ export const OrganizationSettingsView: React.FC = () => {
                 placeholder="colleague@enterprise.com"
               />
               <Select
-                label="Assigned Authorization Role"
+                label={isArabic ? 'الدور والصلاحية المالية المعينة' : 'Assigned Authorization Role'}
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as UserRole)}
                 options={[
-                  { value: 'ADMIN', label: 'ADMIN (Full Administration & SOX Override)' },
-                  { value: 'PROCUREMENT_MANAGER', label: 'PROCUREMENT_MANAGER (RFQ & PO Sign-off)' },
-                  { value: 'BUYER', label: 'BUYER (Requisitions & Vendor Bids)' },
-                  { value: 'APPROVER', label: 'APPROVER (Budget & Financial Authority)' },
-                  { value: 'FINANCE', label: 'FINANCE (Form CS-8 Waivers & Treasury)' },
-                  { value: 'AUDITOR', label: 'AUDITOR (Read-only Fiduciary Oversight)' },
+                  { value: 'ADMIN', label: `${t('roles.ADMIN')} (${isArabic ? 'إدارة كاملة وصلاحية تجاوز SOX' : 'Full Administration & SOX Override'})` },
+                  { value: 'PROCUREMENT_MANAGER', label: `${t('roles.PROCUREMENT_MANAGER')} (${isArabic ? 'اعتماد الطلبات والأوامر' : 'RFQ & PO Sign-off'})` },
+                  { value: 'BUYER', label: `${t('roles.BUYER')} (${isArabic ? 'طلبات الشراء وعروض الموردين' : 'Requisitions & Vendor Bids'})` },
+                  { value: 'APPROVER', label: `${t('roles.APPROVER')} (${isArabic ? 'الميزانية والصلاحية المالية' : 'Budget & Financial Authority'})` },
+                  { value: 'FINANCE', label: `${t('roles.FINANCE')} (${isArabic ? 'إعفاءات CS-8 والخزينة' : 'Form CS-8 Waivers & Treasury'})` },
+                  { value: 'AUDITOR', label: `${t('roles.AUDITOR')} (${isArabic ? 'إشراف وتدقيق للقراءة فقط' : 'Read-only Fiduciary Oversight'})` },
                 ]}
               />
               <Input
-                label="Department"
+                label={t('org.colDept')}
                 value={inviteDept}
                 onChange={(e) => setInviteDept(e.target.value)}
-                placeholder="e.g. Infrastructure Sourcing"
+                placeholder={isArabic ? 'مثال: إدارة التوريد الاستراتيجي' : 'e.g. Infrastructure Sourcing'}
               />
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="secondary" size="sm" type="button" onClick={() => setIsInviteOpen(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button variant="primary" size="sm" type="submit">
-                  Dispatch Invitation
+                  {isArabic ? 'إرسال الدعوة' : 'Dispatch Invitation'}
                 </Button>
               </div>
             </form>

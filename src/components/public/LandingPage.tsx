@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Logo } from '../brand/Logo';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Card } from '../ui/Card';
+import { LanguageSwitcher } from '../LanguageSwitcher';
 import {
   ArrowRight,
   ShieldCheck,
@@ -37,27 +39,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   isDark,
   onToggleTheme,
 }) => {
-  const [activeFeatureTab, setActiveFeatureTab] = useState<'bids' | 'sox' | 'copilot' | 'vendors'>('bids');
+  const { t, i18n } = useTranslation();
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const isArabic = i18n.language === 'ar';
 
-  const faqs = [
-    {
-      q: 'How does Synthetix enforce SOX Section 404 dual-signoff policies?',
-      a: 'Any requisition or purchase commitment exceeding configured thresholds ($250,000 baseline) automatically triggers a dual-custody hold. A certified Treasury Officer and an authorized Sourcing Principal must independently clear the order. Single-source allocations require an executed Form CS-8 Sole-Source Justification waiver prior to ERP dispatch.',
-    },
-    {
-      q: 'Does Synthetix connect with SAP S/4HANA, Workday, and Coupa?',
-      a: 'Yes. Synthetix provides bidirectional REST and OData connectors. Once bids converge and contracts are awarded, purchase orders and master supplier records sync instantaneously into your core financial system without manual re-entry.',
-    },
-    {
-      q: 'How does the AI Copilot maintain factual grounding and avoid hallucination?',
-      a: 'The Copilot operates strictly on live tenant schema context (active RFQs, verified line items, supplier audit history, and internal policy thresholds). Every recommendation includes deterministic policy citations (e.g. [FAR-52.204], [SOX-Sec-404]) and weighted multi-criteria scoring.',
-    },
-    {
-      q: 'What deployment models are supported for strict data sovereignty?',
-      a: 'Synthetix can be hosted in our SOC2 Type II audited cloud, private single-tenant VPCs (AWS GovCloud, Google Cloud Assured Workloads), or hybrid enterprise configurations with customer-managed encryption keys (CMEK).',
-    },
-  ];
+  const faqs = isArabic
+    ? [
+        {
+          q: 'كيف تفرض سينثتكس ضوابط الاعتماد الثنائي وفق معيار SOX 404؟',
+          a: 'أي أمر شراء أو التزام مالي يتجاوز السقف المحدد ($250,000 كحد أساسي) يفعّل تلقائياً وضع التعليق المالي. يجب أن يقوم مسؤول مالي ومفوض توريد معتمد بمراجعة الأمر وفك تعليقه بصورة مستقلة. تتطلب المشتريات ذات المصدر الفردي إرفاق نموذج CS-8 المعتمد لإعفاء المورد الوحيد قبل الإرسال لأنظمة ERP.',
+        },
+        {
+          q: 'هل ترتبط المنصة بأنظمة SAP S/4HANA و Workday و Coupa؟',
+          a: 'نعم. توفر سينثتكس موصلات تكامل ثنائية الاتجاه (REST و OData). عند ترسية العقود، تتم مزامنة أوامر الشراء وسجلات الموردين فورياً مع النظام المالي الأساسي لمؤسستك دون أي إدخال يدوي مكرر.',
+        },
+        {
+          q: 'كيف يضمن المساعد الذكي دقة التحليلات وتجنب الهلوسة؟',
+          a: 'يعمل المساعد بدقة داخل سياق بيانات المؤسسة الحية (طلبات RFQ النشطة، البنود المعتمدة، سجلات تدقيق الموردين، وحدود الصلاحيات المالية). تشتمل كل توصية على مراجع تشريعية دقيقة ومصفوفة درجات رقمية محددة.',
+        },
+        {
+          q: 'ما هي خيارات الاستضافة المتاحة لضمان سيادة البيانات؟',
+          a: 'يمكن استضافة سينثتكس في سحابتنا المعتمدة بشهادة SOC2 Type II، أو في بيئات سحابية افتراضية خاصة (VPC) مثل Google Cloud و AWS، مع دعم التشفير بمفاتيح يتحكم فيها العميل (CMEK).',
+        },
+      ]
+    : [
+        {
+          q: 'How does Synthetix enforce SOX Section 404 dual-signoff policies?',
+          a: 'Any requisition or purchase commitment exceeding configured thresholds ($250,000 baseline) automatically triggers a dual-custody hold. A certified Treasury Officer and an authorized Sourcing Principal must independently clear the order. Single-source allocations require an executed Form CS-8 Sole-Source Justification waiver prior to ERP dispatch.',
+        },
+        {
+          q: 'Does Synthetix connect with SAP S/4HANA, Workday, and Coupa?',
+          a: 'Yes. Synthetix provides bidirectional REST and OData connectors. Once bids converge and contracts are awarded, purchase orders and master supplier records sync instantaneously into your core financial system without manual re-entry.',
+        },
+        {
+          q: 'How does the AI Copilot maintain factual grounding and avoid hallucination?',
+          a: 'The Copilot operates strictly on live tenant schema context (active RFQs, verified line items, supplier audit history, and internal policy thresholds). Every recommendation includes deterministic policy citations (e.g. [FAR-52.204], [SOX-Sec-404]) and weighted multi-criteria scoring.',
+        },
+        {
+          q: 'What deployment models are supported for strict data sovereignty?',
+          a: 'Synthetix can be hosted in our SOC2 Type II audited cloud, private single-tenant VPCs (AWS GovCloud, Google Cloud Assured Workloads), or hybrid enterprise configurations with customer-managed encryption keys (CMEK).',
+        },
+      ];
 
   return (
     <div className="min-h-screen bg-[#F6F5F1] dark:bg-[#0B1614] text-[#17272A] dark:text-[#EBF1F0] selection:bg-[#173E38]/20 transition-colors">
@@ -67,19 +89,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex items-center gap-6">
             <Logo size="md" variant="horizontal" />
             <nav className="hidden md:flex items-center gap-5 text-xs font-medium text-[#647A7B] dark:text-[#8BA39F]">
-              <a href="#solutions" className="hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors">Solutions</a>
-              <a href="#platform" className="hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors">Platform Pillars</a>
-              <a href="#governance" className="hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors">SOX Governance</a>
-              <a href="#faq" className="hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors">Architecture FAQ</a>
+              <a href="#platform" className="hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors">
+                {t('landing.featuresTitle')}
+              </a>
+              <a href="#governance" className="hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors">
+                {t('landing.f1Title')}
+              </a>
+              <a href="#faq" className="hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors">
+                {isArabic ? 'الأسئلة الشائعة' : 'FAQ'}
+              </a>
             </nav>
           </div>
 
           <div className="flex items-center gap-2.5">
+            {/* Language Switcher */}
+            <LanguageSwitcher variant="dropdown" />
+
             {/* Theme Toggle */}
             <button
               onClick={onToggleTheme}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#11211E] text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors"
-              aria-label="Toggle visual theme"
+              aria-label={isDark ? t('nav.themeLight') : t('nav.themeDark')}
             >
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
@@ -88,7 +118,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onClick={() => onOpenAuth('signin')}
               className="hidden sm:inline-flex text-xs font-medium text-[#173E38] dark:text-[#4EA89A] hover:underline px-2.5 py-1.5"
             >
-              Sign In
+              {t('auth.title')}
             </button>
 
             <Button
@@ -97,16 +127,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onClick={onOpenContact}
               className="hidden lg:inline-flex"
             >
-              Book Briefing
+              {t('landing.ctaSales')}
             </Button>
 
             <Button
               variant="primary"
               size="sm"
               onClick={onEnterApp}
-              rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
+              rightIcon={<ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />}
             >
-              Launch Workspace
+              {t('landing.ctaDemo')}
             </Button>
           </div>
         </div>
@@ -114,22 +144,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* 2. Hero Section */}
       <section className="relative overflow-hidden pt-12 pb-16 sm:pt-20 sm:pb-24 border-b border-[#DDE3E1] dark:border-[#24423D]">
-        {/* Subtle geometric precision grid background */}
         <div className="absolute inset-0 opacity-40 dark:opacity-20 pointer-events-none bg-[radial-gradient(#173E38_1px,transparent_1px)] dark:bg-[radial-gradient(#2E7A6F_1px,transparent_1px)] [background-size:24px_24px]" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#11211E] px-3.5 py-1 text-xs font-medium text-[#173E38] dark:text-[#4EA89A] shadow-2xs">
               <span className="h-2 w-2 rounded-full bg-[#C17C43] dark:bg-[#D48D55]" />
-              <span>PRECISION SOURCING INFRASTRUCTURE • ENTERPRISE READY</span>
+              <span>{t('landing.badge')}</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0] leading-[1.12]">
-              Autonomous Sourcing, Decided with <span className="text-[#173E38] dark:text-[#4EA89A]">Absolute Precision</span>.
+              {t('landing.heroTitle1')}{' '}
+              <span className="text-[#173E38] dark:text-[#4EA89A]">{t('landing.heroTitle2')}</span>
             </h1>
 
             <p className="text-sm sm:text-lg text-[#647A7B] dark:text-[#8BA39F] max-w-2xl mx-auto leading-relaxed">
-              Consolidate high-volume vendor proposals into clear multi-criteria matrices, enforce strict SOX dual-authorization, and resolve trade-offs through an intelligent procurement copilot.
+              {t('landing.heroSubtitle')}
             </p>
 
             <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
@@ -137,78 +167,94 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 variant="primary"
                 size="lg"
                 onClick={onEnterApp}
-                rightIcon={<ArrowRight className="h-4 w-4" />}
+                rightIcon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
                 className="shadow-sm font-semibold"
               >
-                Open Operational Workspace
+                {t('landing.ctaDemo')}
               </Button>
               <Button
                 variant="secondary"
                 size="lg"
                 onClick={onOpenContact}
               >
-                Schedule Technical Consultation
+                {t('landing.ctaSales')}
               </Button>
             </div>
 
-            <div className="pt-3 flex items-center justify-center gap-6 text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+            <div className="pt-3 flex flex-wrap items-center justify-center gap-6 text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-[#1B6A4A] dark:text-[#38B482]" />
-                Zero Mock Fallbacks
+                {isArabic ? 'بدون بيانات تجريبية وهمية' : 'Zero Mock Fallbacks'}
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-[#1B6A4A] dark:text-[#38B482]" />
-                SOX Section 404 Compliant
+                {t('landing.statSox')}
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-[#1B6A4A] dark:text-[#38B482]" />
-                SAP S/4HANA & Workday Ready
+                {isArabic ? 'جاهز للتكامل مع SAP و Workday' : 'SAP S/4HANA & Workday Ready'}
               </span>
             </div>
           </div>
 
           {/* Interactive Workspace Live Preview Frame */}
           <div className="mt-12 sm:mt-16 rounded-2xl border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#11211E] shadow-xl overflow-hidden">
-            {/* Mock browser chrome */}
             <div className="flex h-11 items-center justify-between border-b border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6] dark:bg-[#162B27] px-4">
               <div className="flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full bg-[#E6ECEB] dark:bg-[#24423D]" />
                 <span className="h-3 w-3 rounded-full bg-[#E6ECEB] dark:bg-[#24423D]" />
                 <span className="h-3 w-3 rounded-full bg-[#E6ECEB] dark:bg-[#24423D]" />
-                <span className="ml-2 font-mono text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                <span className="ml-2 rtl:ml-0 rtl:mr-2 font-mono text-[11px] text-[#647A7B] dark:text-[#8BA39F]" dir="ltr">
                   app.synthetix.corp/workspace/rfq-2025-0891/bids
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="success" size="sm" dot>Live Production Node</Badge>
+                <Badge variant="success" size="sm" dot>
+                  {isArabic ? 'عقدة تشغيل إنتاجية نشطة' : 'Live Production Node'}
+                </Badge>
                 <Button variant="ghost" size="sm" onClick={onEnterApp} className="text-xs">
-                  Interact Now
+                  {isArabic ? 'دخول مساحة العمل' : 'Interact Now'}
                 </Button>
               </div>
             </div>
 
-            {/* Inner Dashboard Preview */}
             <div className="p-4 sm:p-6 bg-[#F6F5F1] dark:bg-[#0B1614] space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 <Card padding="sm" className="bg-white dark:bg-[#11211E]">
-                  <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">Active Pipeline Spend</p>
-                  <p className="text-lg sm:text-2xl font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">$1.025M</p>
-                  <span className="text-[10px] text-[#1B6A4A] font-medium">+14.2% optimized</span>
+                  <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">{t('landing.statSpend')}</p>
+                  <p className="text-lg sm:text-2xl font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]" dir="ltr">
+                    $1.025M
+                  </p>
+                  <span className="text-[10px] text-[#1B6A4A] font-medium">
+                    {isArabic ? '+14.2% وفورات متحققة' : '+14.2% optimized'}
+                  </span>
                 </Card>
                 <Card padding="sm" className="bg-white dark:bg-[#11211E]">
-                  <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">Bids Under Evaluation</p>
-                  <p className="text-lg sm:text-2xl font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">12 Offers</p>
-                  <span className="text-[10px] text-[#C17C43] font-medium">3 recommended</span>
+                  <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">{t('dashboard.openRfqs')}</p>
+                  <p className="text-lg sm:text-2xl font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">
+                    {isArabic ? '12 عرضاً' : '12 Offers'}
+                  </p>
+                  <span className="text-[10px] text-[#C17C43] font-medium">
+                    {isArabic ? '3 توصيات معتمدة' : '3 recommended'}
+                  </span>
                 </Card>
                 <Card padding="sm" className="bg-white dark:bg-[#11211E]">
-                  <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">SOX Compliance Index</p>
-                  <p className="text-lg sm:text-2xl font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">99.4%</p>
-                  <span className="text-[10px] text-[#1B6A4A] font-medium">1 waiver pending</span>
+                  <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">{t('landing.statAudit')}</p>
+                  <p className="text-lg sm:text-2xl font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">
+                    99.4%
+                  </p>
+                  <span className="text-[10px] text-[#1B6A4A] font-medium">
+                    {isArabic ? '1 إعفاء قيد التوقيع' : '1 waiver pending'}
+                  </span>
                 </Card>
                 <Card padding="sm" className="bg-white dark:bg-[#11211E]">
-                  <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">Negotiated Cost Savings</p>
-                  <p className="text-lg sm:text-2xl font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">$148,200</p>
-                  <span className="text-[10px] text-[#1B6A4A] font-medium">FY-2025 baseline</span>
+                  <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">{t('landing.statLatency')}</p>
+                  <p className="text-lg sm:text-2xl font-bold tabular-nums text-[#17272A] dark:text-[#EBF1F0]">
+                    180ms
+                  </p>
+                  <span className="text-[10px] text-[#1B6A4A] font-medium">
+                    {isArabic ? 'استدلال Gemini 3.8 السحابي' : 'Gemini 3.8 Flash Cloud'}
+                  </span>
                 </Card>
               </div>
 
@@ -219,15 +265,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <span className="font-semibold text-xs sm:text-sm text-[#17272A] dark:text-[#EBF1F0]">
                       Apex Data Infrastructures vs HyperScale Micro-Electronics
                     </span>
-                    <Badge variant="primary" size="sm">Top Recommended</Badge>
+                    <Badge variant="primary" size="sm">
+                      {isArabic ? 'الأعلى توصية' : 'Top Recommended'}
+                    </Badge>
                   </div>
                   <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                    RFQ-2025-0891 • 4x NVIDIA H200 SXM5 Chassis • $31,500 under budget ceiling with 36-mo tier warranty
+                    <span dir="ltr">RFQ-2025-0891</span> • 4x NVIDIA H200 SXM5 Chassis • {isArabic ? '$31,500 أقل من سقف الميزانية مع ضمان 36 شهراً' : '$31,500 under budget ceiling with 36-mo tier warranty'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Button variant="accent" size="sm" onClick={onEnterApp}>
-                    Simulate Award
+                    {isArabic ? 'تجربة الترسية' : 'Simulate Award'}
                   </Button>
                 </div>
               </div>
@@ -241,24 +289,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
-              <p className="text-3xl sm:text-4xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]">14.8%</p>
-              <p className="mt-1 text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">Average Price Reduction</p>
-              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">Through multi-round bid convergence</p>
+              <p className="text-3xl sm:text-4xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]" dir="ltr">14.8%</p>
+              <p className="mt-1 text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                {isArabic ? 'متوسط تقليص الأسعار' : 'Average Price Reduction'}
+              </p>
+              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                {isArabic ? 'عبر مصفوفة تقارب عروض الموردين' : 'Through multi-round bid convergence'}
+              </p>
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]">72%</p>
-              <p className="mt-1 text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">Cycle Time Acceleration</p>
-              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">From requisition release to purchase order</p>
+              <p className="text-3xl sm:text-4xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]" dir="ltr">72%</p>
+              <p className="mt-1 text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                {isArabic ? 'تسريع دورة المشتريات' : 'Cycle Time Acceleration'}
+              </p>
+              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                {isArabic ? 'من نشر الطلب إلى إصدار أمر الشراء' : 'From requisition release to purchase order'}
+              </p>
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]">100%</p>
-              <p className="mt-1 text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">SOX Audit Traceability</p>
-              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">Dual-signoff and Form CS-8 tracking</p>
+              <p className="text-3xl sm:text-4xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]" dir="ltr">100%</p>
+              <p className="mt-1 text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                {isArabic ? 'تتبع كامل لامتثال SOX' : 'SOX Audit Traceability'}
+              </p>
+              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                {isArabic ? 'الاعتماد الثنائي ونموذج CS-8' : 'Dual-signoff and Form CS-8 tracking'}
+              </p>
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]">$1.4B+</p>
-              <p className="mt-1 text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">Enterprise Spend Governed</p>
-              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">Across hardware, logistics, and machining</p>
+              <p className="text-3xl sm:text-4xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]" dir="ltr">$1.4B+</p>
+              <p className="mt-1 text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                {isArabic ? 'حجم الإنفاق المؤسسي المدار' : 'Enterprise Spend Governed'}
+              </p>
+              <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+                {isArabic ? 'في مجالات التقنية واللوجستيات والتصنيع' : 'Across hardware, logistics, and machining'}
+              </p>
             </div>
           </div>
         </div>
@@ -268,67 +332,112 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section id="platform" className="py-16 sm:py-20 border-b border-[#DDE3E1] dark:border-[#24423D]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
-            <Badge variant="accent" size="sm">ARCHITECTURAL FOUNDATIONS</Badge>
+            <Badge variant="accent" size="sm">
+              {isArabic ? 'الأسس المعمارية' : 'ARCHITECTURAL FOUNDATIONS'}
+            </Badge>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
-              Built for High-Stakes Procurement Decisions
+              {t('landing.featuresTitle')}
             </h2>
             <p className="text-xs sm:text-sm text-[#647A7B] dark:text-[#8BA39F]">
-              Eliminate arbitrary procurement choices with rigorous algorithmic scoring and auditable corporate compliance.
+              {t('landing.featuresSubtitle')}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {/* Pillar 1 */}
             <Card padding="md" className="space-y-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#173E38]/10 text-[#173E38] dark:bg-[#2E7A6F]/20 dark:text-[#4EA89A]">
                 <Scale className="h-5 w-5" />
               </div>
               <h3 className="text-sm font-bold text-[#17272A] dark:text-[#EBF1F0]">
-                Bid Convergence Matrix
+                {t('landing.f2Title')}
               </h3>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F] leading-relaxed">
-                Algorithmic synthesis weighing unit price, delivery lead-time, warranty terms, and ESG impact into an executive recommendation score.
+                {t('landing.f2Desc')}
               </p>
             </Card>
 
             {/* Pillar 2 */}
-            <Card padding="md" className="space-y-3">
+            <Card padding="md" className="space-y-3" id="governance">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#173E38]/10 text-[#173E38] dark:bg-[#2E7A6F]/20 dark:text-[#4EA89A]">
                 <Lock className="h-5 w-5" />
               </div>
               <h3 className="text-sm font-bold text-[#17272A] dark:text-[#EBF1F0]">
-                Strict SOX Dual-Signoff
+                {t('landing.f1Title')}
               </h3>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F] leading-relaxed">
-                Automated holds on high-capital purchases. Enforces Treasury Officer co-signing and Form CS-8 Sole-Source justification waivers.
+                {t('landing.f1Desc')}
               </p>
             </Card>
 
             {/* Pillar 3 */}
             <Card padding="md" className="space-y-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#173E38]/10 text-[#173E38] dark:bg-[#2E7A6F]/20 dark:text-[#4EA89A]">
-                <Building2 className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#C17C43]/10 text-[#C17C43] dark:bg-[#D48D55]/20 dark:text-[#D48D55]">
+                <Sparkles className="h-5 w-5" />
               </div>
               <h3 className="text-sm font-bold text-[#17272A] dark:text-[#EBF1F0]">
-                Vendor Governance Radar
+                {t('landing.f3Title')}
               </h3>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F] leading-relaxed">
-                Master supplier classification, tier rankings, on-time delivery telemetry, ISO certifications, and supply chain vulnerability alerts.
+                {t('landing.f3Desc')}
               </p>
             </Card>
 
             {/* Pillar 4 */}
             <Card padding="md" className="space-y-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#C17C43]/10 text-[#C17C43] dark:bg-[#D48D55]/20 dark:text-[#D48D55]">
-                <Sparkles className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#173E38]/10 text-[#173E38] dark:bg-[#2E7A6F]/20 dark:text-[#4EA89A]">
+                <ShieldCheck className="h-5 w-5" />
               </div>
               <h3 className="text-sm font-bold text-[#17272A] dark:text-[#EBF1F0]">
-                Context-Grounded Copilot
+                {t('landing.f4Title')}
               </h3>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F] leading-relaxed">
-                Integrated Gemini 3.8 Flash inference with deterministic policy citations, spend analysis, counter-offer strategies, and automated actions.
+                {t('landing.f4Desc')}
               </p>
             </Card>
+
+            {/* Pillar 5 */}
+            <Card padding="md" className="space-y-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#173E38]/10 text-[#173E38] dark:bg-[#2E7A6F]/20 dark:text-[#4EA89A]">
+                <Layers className="h-5 w-5" />
+              </div>
+              <h3 className="text-sm font-bold text-[#17272A] dark:text-[#EBF1F0]">
+                {t('landing.f5Title')}
+              </h3>
+              <p className="text-xs text-[#647A7B] dark:text-[#8BA39F] leading-relaxed">
+                {t('landing.f5Desc')}
+              </p>
+            </Card>
+
+            {/* Pillar 6 */}
+            <Card padding="md" className="space-y-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#C17C43]/10 text-[#C17C43] dark:bg-[#D48D55]/20 dark:text-[#D48D55]">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <h3 className="text-sm font-bold text-[#17272A] dark:text-[#EBF1F0]">
+                {t('landing.f6Title')}
+              </h3>
+              <p className="text-xs text-[#647A7B] dark:text-[#8BA39F] leading-relaxed">
+                {t('landing.f6Desc')}
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Customer Executive Quote */}
+      <section className="py-12 bg-[#FAF9F6] dark:bg-[#162B27] border-b border-[#DDE3E1] dark:border-[#24423D]">
+        <div className="mx-auto max-w-4xl px-4 text-center space-y-4">
+          <p className="text-base sm:text-xl font-medium italic text-[#17272A] dark:text-[#EBF1F0] leading-relaxed">
+            {t('landing.quoteText')}
+          </p>
+          <div>
+            <p className="text-xs sm:text-sm font-bold text-[#173E38] dark:text-[#4EA89A]">
+              {t('landing.quoteAuthor')}
+            </p>
+            <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
+              {t('landing.quoteRole')}
+            </p>
           </div>
         </div>
       </section>
@@ -337,12 +446,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section id="faq" className="py-16 sm:py-20 border-b border-[#DDE3E1] dark:border-[#24423D]">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-3 mb-10">
-            <Badge variant="primary" size="sm">QUESTIONS & ANSWERS</Badge>
+            <Badge variant="primary" size="sm">
+              {isArabic ? 'الأسئلة والأجوبة التقنية' : 'QUESTIONS & ANSWERS'}
+            </Badge>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
-              Frequently Addressed Technical Questions
+              {isArabic ? 'الاستفسارات التقنية وحوكمة المشتريات' : 'Frequently Addressed Technical Questions'}
             </h2>
             <p className="text-xs sm:text-sm text-[#647A7B] dark:text-[#8BA39F]">
-              Everything procurement directors, enterprise architects, and auditors ask before rollout.
+              {isArabic ? 'إجابات شاملة لكل ما يسأله مديرو المشتريات والمدققون قبل الاعتماد المؤسسي.' : 'Everything procurement directors, enterprise architects, and auditors ask before rollout.'}
             </p>
           </div>
 
@@ -356,7 +467,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 >
                   <button
                     onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="flex w-full items-center justify-between p-4 sm:p-5 text-left text-xs sm:text-sm font-semibold text-[#17272A] dark:text-[#EBF1F0] hover:bg-[#FAF9F6] dark:hover:bg-[#162B27] transition-colors"
+                    className="flex w-full items-center justify-between p-4 sm:p-5 text-left rtl:text-right text-xs sm:text-sm font-semibold text-[#17272A] dark:text-[#EBF1F0] hover:bg-[#FAF9F6] dark:hover:bg-[#162B27] transition-colors"
                   >
                     <span>{faq.q}</span>
                     {isOpen ? (
@@ -390,13 +501,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span>ITAR Compliant</span>
             </div>
             <Button variant="primary" size="sm" onClick={onEnterApp}>
-              Launch Demo Workspace
+              {t('landing.ctaDemo')}
             </Button>
           </div>
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
             <p>© 2025 Synthetix Sourcing Technologies Inc. Precision & Trust Fiduciary Systems.</p>
-            <p>Designed for Fortune 500 Strategic Sourcing, Global Supply Chains, and Group Treasury.</p>
+            <p>{t('landing.footerRights')}</p>
           </div>
         </div>
       </footer>

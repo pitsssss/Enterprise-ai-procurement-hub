@@ -1,8 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Award, X, ShieldCheck } from 'lucide-react';
 import { VendorBid } from '../../types/procurement';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { formatCurrency } from '../../lib/formatters';
 
 interface AwardModalProps {
   isOpen: boolean;
@@ -17,6 +19,9 @@ export const AwardModal: React.FC<AwardModalProps> = ({
   selectedBid,
   onConfirmAward,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
+
   if (!isOpen || !selectedBid) return null;
 
   return (
@@ -37,17 +42,17 @@ export const AwardModal: React.FC<AwardModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-bold text-[#17272A] dark:text-[#EBF1F0]">
-                Authorize Supplier Contract Award
+                {t('bids.modalTitle')}
               </h3>
               <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                Generates purchase order and initiates SOX dual-authorization workflow.
+                {isArabic ? 'إنشاء أمر شراء وتفعيل مسار الاعتماد الثنائي طبقاً لـ SOX.' : 'Generates purchase order and initiates SOX dual-authorization workflow.'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1 rounded-md text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0]"
-            aria-label="Close dialog"
+            aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -57,39 +62,45 @@ export const AwardModal: React.FC<AwardModalProps> = ({
         <div className="mt-4 space-y-3">
           <div className="rounded-xl bg-[#FAF9F6] dark:bg-[#162B27] p-4 border border-[#DDE3E1] dark:border-[#24423D] space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[#647A7B] dark:text-[#8BA39F]">Selected Supplier:</span>
+              <span className="text-[#647A7B] dark:text-[#8BA39F]">{t('bids.selectedVendor')}:</span>
               <span className="font-bold text-[#17272A] dark:text-[#EBF1F0]">{selectedBid.vendorName}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[#647A7B] dark:text-[#8BA39F]">Total Commitment:</span>
+              <span className="text-[#647A7B] dark:text-[#8BA39F]">{t('bids.awardAmount')}:</span>
               <span className="font-mono font-bold text-[#173E38] dark:text-[#4EA89A] text-sm sm:text-base">
-                ${selectedBid.unitPriceTotal.toLocaleString()} USD
+                {formatCurrency(selectedBid.unitPriceTotal)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[#647A7B] dark:text-[#8BA39F]">Fulfillment Lead Time:</span>
-              <span className="font-semibold text-[#17272A] dark:text-[#EBF1F0]">{selectedBid.leadTimeWeeks} Weeks</span>
+              <span className="text-[#647A7B] dark:text-[#8BA39F]">{t('bids.colLead')}:</span>
+              <span className="font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                {selectedBid.leadTimeWeeks} {t('bids.weeks')}
+              </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[#647A7B] dark:text-[#8BA39F]">Warranty Term:</span>
-              <span className="font-semibold text-[#17272A] dark:text-[#EBF1F0]">{selectedBid.warrantyMonths} Months</span>
+              <span className="text-[#647A7B] dark:text-[#8BA39F]">{t('bids.colWarranty')}:</span>
+              <span className="font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                {selectedBid.warrantyMonths} {t('bids.months')}
+              </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[#647A7B] dark:text-[#8BA39F]">Evaluation Composite:</span>
+              <span className="text-[#647A7B] dark:text-[#8BA39F]">{t('bids.colScore')}:</span>
               <Badge variant="primary" size="sm">
-                {selectedBid.aiRecommendationScore} / 100 Score
+                {selectedBid.aiRecommendationScore} / 100
               </Badge>
             </div>
           </div>
 
           <div className="rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] p-3 text-[11px] text-[#34484B] dark:text-[#C2D3CF] border border-[#DDE3E1] dark:border-[#24423D] leading-relaxed">
-            <strong className="text-[#17272A] dark:text-[#EBF1F0]">Fiduciary Action: </strong>
-            Executing this award simulation updates the RFQ state to <Badge variant="success" size="sm">AWARDED</Badge> and generates a formal Purchase Order routed for executive dual sign-off.
+            <strong className="text-[#17272A] dark:text-[#EBF1F0]">
+              {isArabic ? 'إقرار مالي: ' : 'Fiduciary Action: '}
+            </strong>
+            {t('bids.awardNotice')}
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2.5">
             <Button variant="secondary" size="md" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="accent"
@@ -97,7 +108,7 @@ export const AwardModal: React.FC<AwardModalProps> = ({
               onClick={() => onConfirmAward(selectedBid)}
               leftIcon={<ShieldCheck className="h-4 w-4" />}
             >
-              Confirm Award & Route PO
+              {t('bids.btnConfirmAward')}
             </Button>
           </div>
         </div>

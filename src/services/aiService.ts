@@ -11,15 +11,18 @@ export class ProcurementAIService {
   public static async queryAssistant(
     prompt: string,
     context: AssistantContext,
-    preferLiveModel: boolean = true
+    preferLiveModel: boolean = true,
+    locale: string = 'en'
   ): Promise<Omit<ChatMessage, 'id' | 'timestamp'>> {
+    const isArabic = locale === 'ar' || /[\u0600-\u06FF]/.test(prompt || '');
+
     // 1. Attempt Server-Side Gemini API call via secure proxy route
     if (preferLiveModel) {
       try {
         const response = await fetch('/api/gemini/copilot', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, context }),
+          body: JSON.stringify({ prompt, context, locale: isArabic ? 'ar' : 'en' }),
         });
 
         if (response.ok) {
@@ -68,8 +71,43 @@ export class ProcurementAIService {
       lower.includes('bid') ||
       lower.includes('matrix') ||
       lower.includes('h200') ||
-      lower.includes('rfq-2025-0891')
+      lower.includes('rfq-2025-0891') ||
+      lower.includes('مقارنة') ||
+      lower.includes('عروض') ||
+      lower.includes('مصفوفة')
     ) {
+      if (isArabic) {
+        return {
+          sender: 'assistant',
+          mode: 'SIMULATED_PRESET',
+          content: `### ⚖️ تحليل المفاضلة بين عروض الموردين (RFQ-2025-0891)
+
+**1. شركة Apex للبنى التحتية — الترسية الموصى بها (التقييم: 95/100)**
+- **السعر الإجمالي:** $388,500 (يوفر $31,500 مقارنة بسقف الميزانية المعتمدة $420,000).
+- **جدول التوريد:** تسليم خلال 4 أسابيع يلبي متطلبات الربع الثاني دون غرامات تأخير.
+- **الحوكمة وESG:** مورد مصنف فئة أولى (Tier-1) مع تقييم 92/100 ونسبة التزام 99.4%.
+
+**2. شركة HyperScale Grid Tech — مخاطر تأخير التوريد (التقييم: 81/100)**
+- **السعر الإجمالي:** $365,000 (أرخص بمقدار $23,500 مبدئياً عن Apex).
+- **عامل المخاطرة:** مدة الشحن (9 أسابيع) تسبب تكاليف تعطل عمالة تقدر بـ **$42,000**، مما يلغي ميزة الخصم.
+
+**3. شركة Synapse Server Works GmbH — خيار الضمان الممتد (التقييم: 79/100)**
+- **السعر الإجمالي:** $412,000 (قريب من الحد الأقصى للميزانية؛ يوفر أطول فترة ضمان 48 شهراً).
+
+**توصية المساعد الذكي:** المضي قدماً مع **Apex Data Infrastructures** مع إمكانية تقديم عرض مضاد بسعر $378,000.`,
+          citations: [
+            'دليل التوريد الاستراتيجي المؤسسي §4.2',
+            'قاعدة بيانات التزامات الموردين الفئة الأولى',
+            'تحليلات الإنفاق لفئات التوريد 2025',
+          ],
+          suggestedAction: {
+            label: 'فتح مصفوفة مقارنة الموردين',
+            actionType: 'OPEN_COMPARISON',
+            payload: 'rfq-101',
+          },
+        };
+      }
+
       return {
         sender: 'assistant',
         mode: 'SIMULATED_PRESET',
@@ -177,6 +215,21 @@ Please confirm acceptance to issue immediate purchase order dispatch.`,
 - **Supply Availability:** Lead time standard for H200 SXM5 units is 4–6 weeks globally; 3 Tier-1 vendors hold valid warehouse stock allocations.
 - **Budget Realism:** Current $420,000 budget allows a healthy 7.5% safety margin against spot prices.`,
         citations: ['OCP Hardware Standards', 'Global Supply Chain Index Q1-2025'],
+      };
+    }
+
+    if (isArabic) {
+      return {
+        sender: 'assistant',
+        mode: 'SIMULATED_PRESET',
+        content: `تم فحص مساحة عمل التوريد الخاصة بك بنجاح: **${context.rfqs.length} طلبات عروض أسعار نشطة**، و**${context.pos.length} أوامر شراء**، وسجلات الموردين المعتمدين.
+
+إليك أبرز الإجراءات التي يمكنك تنفيذها الآن:
+• **"مقارنة عروض طلب RFQ-2025-0891"** — مفاضلة مواعيد التسليم مقابل الأسعار
+• **"تدقيق تعليق أمر الشراء PO-2025-10493"** — فحص موانع صلاحيات SOX
+• **"عرض وفورات التكلفة وتحليلات الإنفاق"** — مراجعة الفروق عن الميزانية
+• **"صياغة عرض مضاد لشركة Apex Data"** — تجهيز خطابات التفاوض التجاري`,
+        citations: ['فهرس التوريد المؤسسي الذكي v4.2'],
       };
     }
 

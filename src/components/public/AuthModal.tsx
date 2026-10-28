@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Logo } from '../brand/Logo';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -23,6 +24,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'signin',
   onSuccess,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
   const { signInWithGoogle, authError: contextAuthError } = useAuth();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
@@ -42,7 +45,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error('Google Sign-In failed:', err);
-      setErrorMessage(err.message || 'Google authentication failed.');
+      setErrorMessage(err.message || (isArabic ? 'فشلت المصادقة عبر Google' : 'Google authentication failed.'));
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +59,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       if (mode === 'recovery') {
         if (!email.trim()) {
-          setErrorMessage('Please enter your work email address.');
+          setErrorMessage(isArabic ? 'يرجى إدخال البريد الإلكتروني للعمل.' : 'Please enter your work email address.');
           setIsLoading(false);
           return;
         }
@@ -64,7 +67,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setRecoverySent(true);
       } else if (mode === 'register') {
         if (!email.trim() || !password) {
-          setErrorMessage('Please provide both work email and a secure password.');
+          setErrorMessage(isArabic ? 'يرجى تقديم كل من البريد الإلكتروني وكلمة مرور آمنة.' : 'Please provide both work email and a secure password.');
           setIsLoading(false);
           return;
         }
@@ -74,7 +77,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       } else {
         // signin or invite
         if (!email.trim() || !password) {
-          setErrorMessage('Please enter your work email and password.');
+          setErrorMessage(isArabic ? 'يرجى إدخال بريدك الإلكتروني وكلمة المرور.' : 'Please enter your work email and password.');
           setIsLoading(false);
           return;
         }
@@ -84,15 +87,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
     } catch (err: any) {
       console.error('Auth error:', err);
-      let msg = err.message || 'Authentication failed. Please verify credentials.';
+      let msg = err.message || (isArabic ? 'فشلت المصادقة. يرجى التحقق من البيانات.' : 'Authentication failed. Please verify credentials.');
       if (err.code === 'auth/operation-not-allowed') {
-        msg = 'Email/password sign-in is not enabled for this project. Please use the Google Sign-In button above.';
+        msg = isArabic ? 'تسجيل الدخول بالبريد غير مفعل لهذا المشروع. يرجى استخدام Google أعلاه.' : 'Email/password sign-in is not enabled for this project. Please use the Google Sign-In button above.';
       } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        msg = 'Invalid email or password. You can also sign in instantly using Google.';
+        msg = isArabic ? 'بيانات الاعتماد غير صالحة. يمكنك أيضاً الدخول فورياً عبر Google.' : 'Invalid email or password. You can also sign in instantly using Google.';
       } else if (err.code === 'auth/email-already-in-use') {
-        msg = 'An account with this email already exists. Try signing in instead.';
+        msg = isArabic ? 'يوجد حساب مسجل بهذا البريد بالفعل. حاول تسجيل الدخول بدلاً من ذلك.' : 'An account with this email already exists. Try signing in instead.';
       } else if (err.code === 'auth/weak-password') {
-        msg = 'Password should be at least 6 characters.';
+        msg = isArabic ? 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.' : 'Password should be at least 6 characters.';
       }
       setErrorMessage(msg);
     } finally {
@@ -112,8 +115,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       >
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] p-1 rounded-md"
-          aria-label="Close dialog"
+          className="absolute top-5 right-5 rtl:right-auto rtl:left-5 text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] p-1 rounded-md"
+          aria-label={t('common.close')}
         >
           <X className="h-4 w-4" />
         </button>
@@ -122,16 +125,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="flex flex-col items-center text-center">
           <Logo size="lg" variant="compact" />
           <h2 className="mt-4 text-lg sm:text-xl font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0]">
-            {mode === 'signin' && 'Sign in to Enterprise Hub'}
-            {mode === 'register' && 'Create Enterprise Account'}
-            {mode === 'recovery' && 'Fiduciary Account Recovery'}
-            {mode === 'invite' && 'Accept Team Invitation'}
+            {mode === 'signin' && (isArabic ? 'تسجيل الدخول للمركز المؤسسي' : 'Sign in to Enterprise Hub')}
+            {mode === 'register' && (isArabic ? 'إنشاء حساب مؤسسي جديد' : 'Create Enterprise Account')}
+            {mode === 'recovery' && (isArabic ? 'استعادة كلمة المرور' : 'Fiduciary Account Recovery')}
+            {mode === 'invite' && (isArabic ? 'قبول دعوة الانضمام للفريق' : 'Accept Team Invitation')}
           </h2>
           <p className="mt-1 text-xs text-[#647A7B] dark:text-[#8BA39F] max-w-xs">
-            {mode === 'signin' && 'Access authorized procurement pipelines, SOX approval queues, and supplier matrices.'}
-            {mode === 'register' && 'Register your verified corporate identity to access RFQs and purchase order delegations.'}
-            {mode === 'recovery' && 'Enter your verified work email to receive a secure password recovery link.'}
-            {mode === 'invite' && 'You have been invited to join the Strategic Sourcing & Treasury review team.'}
+            {mode === 'signin' && (isArabic ? 'الوصول إلى خطوط التوريد المعتمدة، وقوائم موافقات SOX، ومصفوفات الموردين.' : 'Access authorized procurement pipelines, SOX approval queues, and supplier matrices.')}
+            {mode === 'register' && (isArabic ? 'سجل هويتك المؤسسية المعتمدة للوصول لطلبات عروض الأسعار وتفويضات الشراء.' : 'Register your verified corporate identity to access RFQs and purchase order delegations.')}
+            {mode === 'recovery' && (isArabic ? 'أدخل بريد عملك المعتمد لاستلام رابط إعادة تعيين كلمة المرور.' : 'Enter your verified work email to receive a secure password recovery link.')}
+            {mode === 'invite' && (isArabic ? 'تمت دعوتك للانضمام إلى فريق التوريد الاستراتيجي ومراجعة الخزينة.' : 'You have been invited to join the Strategic Sourcing & Treasury review team.')}
           </p>
         </div>
 
@@ -170,13 +173,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 fill="#EA4335"
               />
             </svg>
-            <span>Continue with Google Account</span>
+            <span>{t('auth.signInGoogle')}</span>
           </button>
 
           <div className="relative flex items-center justify-center my-3">
             <div className="w-full border-t border-[#DDE3E1] dark:border-[#24423D]" />
             <span className="absolute bg-white dark:bg-[#11211E] px-2 text-[10px] uppercase font-semibold text-[#647A7B] dark:text-[#8BA39F] tracking-wider">
-              Or with email credentials
+              {isArabic ? 'أو عبر البريد وكلمة المرور' : 'Or with email credentials'}
             </span>
           </div>
         </div>
@@ -188,9 +191,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <CheckCircle2 className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-[#17272A] dark:text-[#EBF1F0]">Recovery Link Dispatched</h3>
+              <h3 className="text-sm font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                {isArabic ? 'تم إرسال رابط الاستعادة' : 'Recovery Link Dispatched'}
+              </h3>
               <p className="mt-1 text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                A password reset email was dispatched to <strong className="text-[#17272A] dark:text-[#EBF1F0]">{email}</strong>.
+                {isArabic ? 'تم إرسال بريد استعادة كلمة المرور إلى ' : 'A password reset email was dispatched to '}
+                <strong className="text-[#17272A] dark:text-[#EBF1F0]"><bdi dir="ltr">{email}</bdi></strong>.
               </p>
             </div>
             <Button
@@ -202,13 +208,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 setMode('signin');
               }}
             >
-              Back to Sign In
+              {isArabic ? 'العودة لتسجيل الدخول' : 'Back to Sign In'}
             </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-3 space-y-3.5">
             <Input
-              label="Work Email"
+              label={isArabic ? 'البريد الإلكتروني للعمل' : 'Work Email'}
               type="email"
               required
               value={email}
@@ -220,7 +226,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {mode !== 'recovery' && (
               <div>
                 <Input
-                  label="Password"
+                  label={isArabic ? 'كلمة المرور' : 'Password'}
                   type="password"
                   required
                   value={password}
@@ -235,7 +241,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       onClick={() => setMode('register')}
                       className="text-[#173E38] dark:text-[#4EA89A] hover:underline"
                     >
-                      Need an account? Register
+                      {isArabic ? 'ليس لديك حساب؟ سجل الآن' : 'Need an account? Register'}
                     </button>
                   ) : (
                     <button
@@ -243,7 +249,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       onClick={() => setMode('signin')}
                       className="text-[#173E38] dark:text-[#4EA89A] hover:underline"
                     >
-                      Have an account? Sign in
+                      {isArabic ? 'لديك حساب بالفعل؟ سجل الدخول' : 'Have an account? Sign in'}
                     </button>
                   )}
                   <button
@@ -251,7 +257,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => setMode('recovery')}
                     className="text-[#C17C43] dark:text-[#D48D55] hover:underline"
                   >
-                    Forgot password?
+                    {isArabic ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
                   </button>
                 </div>
               </div>
@@ -263,13 +269,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               size="md"
               fullWidth
               isLoading={isLoading}
-              rightIcon={<ArrowRight className="h-4 w-4" />}
+              rightIcon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
               className="mt-2"
             >
-              {mode === 'signin' && 'Sign In to Workspace'}
-              {mode === 'register' && 'Create Account'}
-              {mode === 'recovery' && 'Send Password Reset Email'}
-              {mode === 'invite' && 'Confirm & Enter Platform'}
+              {mode === 'signin' && (isArabic ? 'دخول مساحة العمل' : 'Sign In to Workspace')}
+              {mode === 'register' && (isArabic ? 'إنشاء حساب جديد' : 'Create Account')}
+              {mode === 'recovery' && (isArabic ? 'إرسال رابط إعادة التعيين' : 'Send Password Reset Email')}
+              {mode === 'invite' && (isArabic ? 'تأكيد ودخول المنصة' : 'Confirm & Enter Platform')}
             </Button>
           </form>
         )}
@@ -287,14 +293,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 onClick={() => setMode('invite')}
                 className="text-[#173E38] dark:text-[#4EA89A] font-medium hover:underline text-[11px]"
               >
-                Accept Invite
+                {isArabic ? 'قبول دعوة' : 'Accept Invite'}
               </button>
             ) : (
               <button
                 onClick={() => setMode('signin')}
                 className="text-[#173E38] dark:text-[#4EA89A] font-medium hover:underline text-[11px]"
               >
-                Sign In
+                {isArabic ? 'تسجيل الدخول' : 'Sign In'}
               </button>
             )}
           </div>

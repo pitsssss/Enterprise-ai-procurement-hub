@@ -12,6 +12,8 @@ import {
   updateUserProfile as updateProfileDoc,
   updateOrganizationMemberRole,
 } from '../services/firestoreService';
+import { setAppLanguage } from '../i18n';
+import i18n from '../i18n';
 
 export type ProcurementPermission =
   | 'CREATE_RFQ'
@@ -65,6 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setOrganization(userOrg);
           setCurrentMember(userMem);
           setAuthError(null);
+
+          if (userProf?.language && userProf.language !== i18n.language) {
+            setAppLanguage(userProf.language as 'en' | 'ar');
+          }
         } catch (err: any) {
           console.error('Failed to initialize user session:', err);
           setAuthError(err.message || 'Failed to load enterprise profile.');

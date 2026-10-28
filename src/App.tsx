@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   CheckCircle2,
   Bot,
@@ -15,6 +16,7 @@ import {
   Loader2,
   Lock,
 } from 'lucide-react';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
 
 import { RFQ, VendorBid, Vendor, PurchaseOrder, ChatMessage, TabType } from './types/procurement';
 import { INITIAL_RFQS, INITIAL_BIDS, INITIAL_VENDORS, INITIAL_POS } from './data/mockData';
@@ -51,6 +53,8 @@ import { Button } from './components/ui/Button';
 import { Badge } from './components/ui/Badge';
 
 export default function App() {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
   const { user, profile, organization, userRole, loading: authLoading, canPerform } = useAuth();
 
   // Public vs Workspace View Mode
@@ -252,7 +256,7 @@ export default function App() {
     };
 
     try {
-      const response = await ProcurementAIService.queryAssistant(text, context, useLiveGemini);
+      const response = await ProcurementAIService.queryAssistant(text, context, useLiveGemini, i18n.language);
       const assistantMsg: ChatMessage = {
         id: `a-${Date.now()}`,
         sender: 'assistant',
@@ -268,8 +272,9 @@ export default function App() {
         id: `a-${Date.now()}`,
         sender: 'assistant',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        content:
-          'Pipeline evaluated against internal spend controls. All parameters remain within authorized delegations.',
+        content: isArabic
+          ? 'تم تقييم مسار المشتريات مقابل ضوابط الإنفاق الداخلية. جميع المعاملات ضمن الصلاحيات المعتمدة.'
+          : 'Pipeline evaluated against internal spend controls. All parameters remain within authorized delegations.',
         mode: 'SIMULATED_PRESET',
         citations: ['[SOX-Sec-404]'],
       };
@@ -527,13 +532,13 @@ export default function App() {
         <header className="hidden md:flex h-16 items-center justify-between border-b border-[#DDE3E1] dark:border-[#24423D] px-6 bg-white/80 dark:bg-[#11211E]/80 backdrop-blur-md shrink-0">
           <div className="flex items-center gap-4 flex-1">
             <div className="relative w-80">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#647A7B] dark:text-[#8BA39F] pointer-events-none" />
+              <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-2.5 h-4 w-4 text-[#647A7B] dark:text-[#8BA39F] pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search RFQs, suppliers, SKUs (⌘K)..."
+                placeholder={t('nav.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6] dark:bg-[#162B27] py-2 pl-9 pr-3 text-xs text-[#17272A] dark:text-[#EBF1F0] placeholder-[#92A4A3] focus:border-[#173E38] dark:focus:border-[#2E7A6F] focus:outline-none"
+                className="w-full rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6] dark:bg-[#162B27] py-2 pl-9 pr-3 rtl:pl-3 rtl:pr-9 text-xs text-[#17272A] dark:text-[#EBF1F0] placeholder-[#92A4A3] focus:border-[#173E38] dark:focus:border-[#2E7A6F] focus:outline-none"
               />
             </div>
 
@@ -542,16 +547,19 @@ export default function App() {
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] hover:bg-[#FAF9F6] dark:hover:bg-[#162B27] border border-[#DDE3E1] dark:border-[#24423D] transition-colors"
             >
               <Globe className="h-3.5 w-3.5 text-[#C17C43] dark:text-[#D48D55]" />
-              <span>Public Overview Site</span>
+              <span>{t('nav.publicSite')}</span>
             </button>
           </div>
 
           <div className="flex items-center gap-2.5">
+            {/* Language Switcher Dropdown */}
+            <LanguageSwitcher variant="dropdown" />
+
             {/* Notifications Bell */}
             <button
               onClick={() => setIsNotificationsOpen(true)}
               className="relative p-2 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors"
-              aria-label="Open notifications"
+              aria-label={t('nav.notifications')}
             >
               <Bell className="h-4 w-4" />
               {flaggedPosCount > 0 && (
@@ -563,7 +571,7 @@ export default function App() {
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] transition-colors"
-              aria-label="Toggle visual theme"
+              aria-label={isDark ? t('nav.themeLight') : t('nav.themeDark')}
             >
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
@@ -575,7 +583,7 @@ export default function App() {
               onClick={() => setIsCreateRfqModalOpen(true)}
               leftIcon={<Plus className="h-4 w-4" />}
             >
-              Create Requisition
+              {t('rfq.createButton')}
             </Button>
 
             {/* AI Copilot Trigger */}
@@ -585,7 +593,7 @@ export default function App() {
               onClick={() => setCopilotDrawerOpen(!copilotDrawerOpen)}
               leftIcon={<Sparkles className="h-4 w-4" />}
             >
-              <span>Copilot</span>
+              <span>{t('nav.copilotButton')}</span>
               <span className="h-2 w-2 rounded-full bg-[#1B6A4A] dark:bg-[#38B482]" />
             </Button>
           </div>
@@ -593,7 +601,7 @@ export default function App() {
 
         {/* Toast Alert Notification */}
         {toastMessage && (
-          <div className="fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-8 sm:w-auto z-50 flex items-center gap-3 rounded-xl border border-[#173E38]/30 dark:border-[#2E7A6F]/40 bg-white dark:bg-[#11211E] p-3.5 sm:p-4 text-xs shadow-xl animate-in fade-in slide-in-from-top-4 duration-150 max-w-md">
+          <div className="fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-8 rtl:sm:right-auto rtl:sm:left-8 sm:w-auto z-50 flex items-center gap-3 rounded-xl border border-[#173E38]/30 dark:border-[#2E7A6F]/40 bg-white dark:bg-[#11211E] p-3.5 sm:p-4 text-xs shadow-xl animate-in fade-in slide-in-from-top-4 duration-150 max-w-md">
             <CheckCircle2 className="h-5 w-5 text-[#1B6A4A] dark:text-[#38B482] shrink-0" />
             <div className="flex-1">
               <p className="font-bold text-[#17272A] dark:text-[#EBF1F0] text-xs sm:text-sm">{toastMessage.title}</p>

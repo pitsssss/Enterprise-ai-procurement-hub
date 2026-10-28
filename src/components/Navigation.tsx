@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Logo } from './brand/Logo';
 import { Badge } from './ui/Badge';
 import { useAuth } from '../contexts/AuthContext';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import {
   TrendingUp,
   FileText,
@@ -62,6 +64,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   unreadNotificationsCount = 2,
   onSwitchToPublicSite,
 }) => {
+  const { t } = useTranslation();
   const { user, profile, organization, userRole } = useAuth();
   const userName = profile?.displayName || user?.displayName || user?.email?.split('@')[0] || 'Enterprise Signatory';
   const userInitials = (userName || 'SC').slice(0, 2).toUpperCase();
@@ -69,51 +72,51 @@ export const Navigation: React.FC<NavigationProps> = ({
   const getSectionTitle = () => {
     switch (activeTab) {
       case 'overview':
-        return 'Spend & Analytics';
+        return t('nav.overview');
       case 'rfqs':
-        return `RFQs & Requisitions (${rfqsCount})`;
+        return `${t('nav.rfqs')} (${rfqsCount})`;
       case 'bids':
-        return 'Bid Convergence Matrix';
+        return t('nav.bids');
       case 'vendors':
-        return `Vendor Master (${vendorsCount})`;
+        return `${t('nav.vendors')} (${vendorsCount})`;
       case 'pos':
-        return flaggedPosCount > 0 ? `Orders (${flaggedPosCount} SOX Hold)` : 'Purchase Orders';
+        return flaggedPosCount > 0 ? `${t('nav.pos')} (${flaggedPosCount} ${t('nav.holdBadge')})` : t('nav.pos');
       case 'org':
-        return 'Organization Governance';
+        return t('nav.org');
       case 'profile':
-        return 'Signatory Profile';
+        return t('nav.profile');
       default:
-        return 'Sourcing Workspace';
+        return t('brand.name');
     }
   };
 
   const navItems = [
     {
       id: 'overview' as TabType,
-      label: 'Spend & Analytics',
+      label: t('nav.overview'),
       icon: <TrendingUp className="h-4 w-4" />,
     },
     {
       id: 'rfqs' as TabType,
-      label: 'RFQs & Requisitions',
+      label: t('nav.rfqs'),
       icon: <FileText className="h-4 w-4" />,
       count: rfqsCount,
     },
     {
       id: 'bids' as TabType,
-      label: 'Bid Comparisons',
+      label: t('nav.bids'),
       icon: <Award className="h-4 w-4" />,
       badge: <span className="h-2 w-2 rounded-full bg-[#C17C43] dark:bg-[#D48D55]" />,
     },
     {
       id: 'vendors' as TabType,
-      label: 'Vendor Master Data',
+      label: t('nav.vendors'),
       icon: <Building2 className="h-4 w-4" />,
       count: vendorsCount,
     },
     {
       id: 'pos' as TabType,
-      label: 'Purchase Orders',
+      label: t('nav.pos'),
       icon: <ShoppingCart className="h-4 w-4" />,
       alertCount: flaggedPosCount,
     },
@@ -122,12 +125,12 @@ export const Navigation: React.FC<NavigationProps> = ({
   const adminNavItems = [
     {
       id: 'org' as TabType,
-      label: 'Organization Governance',
+      label: t('nav.org'),
       icon: <Sliders className="h-4 w-4" />,
     },
     {
       id: 'profile' as TabType,
-      label: 'Signatory Profile',
+      label: t('nav.profile'),
       icon: <User className="h-4 w-4" />,
     },
   ];
@@ -151,7 +154,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <span className="truncate">{organization?.name || 'Synthetix Global Corp'}</span>
             </div>
             <span className="font-mono text-[10px] text-[#647A7B] dark:text-[#8BA39F] shrink-0 uppercase font-semibold">
-              {userRole}
+              {t(`roles.${userRole}`, userRole)}
             </span>
           </div>
         </div>
@@ -159,7 +162,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         {/* Main Navigation Links */}
         <nav className="flex-1 space-y-1 px-3 py-2 text-xs font-medium overflow-y-auto touch-scroll">
           <p className="px-2 pb-1.5 pt-2 text-[10px] uppercase font-semibold text-[#647A7B] dark:text-[#8BA39F] tracking-wider">
-            Sourcing Operations
+            {t('nav.operationsTitle')}
           </p>
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
@@ -167,7 +170,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-all text-left ${
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 transition-all text-left rtl:text-right ${
                   isActive
                     ? 'bg-[#173E38] text-white dark:bg-[#2E7A6F] font-semibold shadow-2xs'
                     : 'text-[#34484B] dark:text-[#C2D3CF] hover:bg-[#FAF9F6] dark:hover:bg-[#162B27] hover:text-[#17272A] dark:hover:text-[#EBF1F0]'
@@ -201,7 +204,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                           : 'bg-[#A22424]/10 text-[#A22424] dark:bg-[#EA5454]/20 dark:text-[#EA5454]'
                       }`}
                     >
-                      {item.alertCount} Hold
+                      {item.alertCount} {t('nav.holdBadge')}
                     </span>
                   )}
                 </div>
@@ -210,7 +213,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           })}
 
           <p className="px-2 pb-1.5 pt-4 text-[10px] uppercase font-semibold text-[#647A7B] dark:text-[#8BA39F] tracking-wider">
-            Governance & Settings
+            {t('nav.governanceTitle')}
           </p>
           {adminNavItems.map((item) => {
             const isActive = activeTab === item.id;
@@ -218,7 +221,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 transition-all text-left ${
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 transition-all text-left rtl:text-right ${
                   isActive
                     ? 'bg-[#173E38] text-white dark:bg-[#2E7A6F] font-semibold shadow-2xs'
                     : 'text-[#34484B] dark:text-[#C2D3CF] hover:bg-[#FAF9F6] dark:hover:bg-[#162B27] hover:text-[#17272A] dark:hover:text-[#EBF1F0]'
@@ -233,17 +236,24 @@ export const Navigation: React.FC<NavigationProps> = ({
           })}
         </nav>
 
-        {/* Public Marketing Site Switcher Link */}
+        {/* Public Marketing Site Switcher Link & Language Switcher */}
         <div className="p-3 border-t border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6]/50 dark:bg-[#162B27]/40 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-medium text-[#647A7B] dark:text-[#8BA39F]">
+              {t('nav.language')}:
+            </span>
+            <LanguageSwitcher variant="inline" />
+          </div>
+
           <button
             onClick={onSwitchToPublicSite}
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-[#647A7B] dark:text-[#8BA39F] hover:bg-white dark:hover:bg-[#11211E] hover:text-[#17272A] dark:hover:text-[#EBF1F0] border border-transparent hover:border-[#DDE3E1] dark:hover:border-[#24423D] transition-colors"
           >
             <div className="flex items-center gap-2">
               <Globe className="h-4 w-4 text-[#C17C43] dark:text-[#D48D55]" />
-              <span>Public Overview Site</span>
+              <span>{t('nav.publicSite')}</span>
             </div>
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3 w-3 rtl:rotate-180" />
           </button>
         </div>
 
@@ -263,19 +273,20 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div
             className="flex-1 overflow-hidden cursor-pointer"
             onClick={() => setActiveTab('profile')}
-            title="View Signatory Profile & Delegations"
+            title={t('nav.profile')}
           >
             <p className="truncate text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0] hover:text-[#173E38] dark:hover:text-[#4EA89A] transition-colors">
               {userName}
             </p>
             <p className="truncate text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
-              {profile?.title || `${userRole} Signatory`}
+              {profile?.title || `${t(`roles.${userRole}`, userRole)}`}
             </p>
           </div>
           <button
             onClick={onToggleTheme}
             className="p-1.5 text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] rounded-md transition-colors"
-            title="Toggle Theme"
+            title={isDark ? t('nav.themeLight') : t('nav.themeDark')}
+            aria-label="Toggle theme"
           >
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
@@ -293,10 +304,10 @@ export const Navigation: React.FC<NavigationProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold tracking-tight text-[#17272A] dark:text-[#EBF1F0] truncate">
-                  Synthetix
+                  {t('brand.shortName')}
                 </span>
                 <span className="rounded bg-[#C17C43]/15 text-[#C17C43] dark:bg-[#D48D55]/20 dark:text-[#D48D55] px-1 py-0.2 text-[9px] font-semibold">
-                  Hub
+                  {t('brand.badge')}
                 </span>
               </div>
               <p className="text-[11px] font-medium text-[#173E38] dark:text-[#4EA89A] truncate leading-tight">
@@ -310,21 +321,24 @@ export const Navigation: React.FC<NavigationProps> = ({
             {/* Search Toggle */}
             <button
               onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all ${
+              className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all ${
                 isMobileSearchOpen || searchQuery
                   ? 'border-[#173E38] bg-[#173E38]/10 text-[#173E38] dark:border-[#2E7A6F] dark:text-[#4EA89A]'
                   : 'border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F]'
               }`}
-              aria-label="Toggle search"
+              aria-label={t('common.search')}
             >
               <Search className="h-4 w-4" />
             </button>
 
+            {/* Language Switcher Button for Mobile */}
+            <LanguageSwitcher variant="compact" />
+
             {/* Notifications Bell */}
             <button
               onClick={onOpenNotifications}
-              className="relative flex items-center justify-center w-9 h-9 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F]"
-              aria-label="Open notifications"
+              className="relative flex items-center justify-center w-8 h-8 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F]"
+              aria-label={t('nav.notifications')}
             >
               <Bell className="h-4 w-4" />
               {unreadNotificationsCount > 0 && (
@@ -335,7 +349,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             {/* Theme Toggle */}
             <button
               onClick={onToggleTheme}
-              className="flex items-center justify-center w-9 h-9 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F]"
+              className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#DDE3E1] dark:border-[#24423D] text-[#647A7B] dark:text-[#8BA39F]"
               aria-label="Toggle theme"
             >
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -344,8 +358,8 @@ export const Navigation: React.FC<NavigationProps> = ({
             {/* Quick Requisition Create Button */}
             <button
               onClick={onOpenCreateRfq}
-              className="flex items-center justify-center gap-1 rounded-lg bg-[#173E38] dark:bg-[#2E7A6F] px-2.5 h-9 text-xs font-semibold text-white shadow-xs active:scale-95 transition-all"
-              aria-label="Create requisition"
+              className="flex items-center justify-center gap-1 rounded-lg bg-[#173E38] dark:bg-[#2E7A6F] px-2 h-8 text-xs font-semibold text-white shadow-xs active:scale-95 transition-all"
+              aria-label={t('rfq.createButton')}
             >
               <Plus className="h-3.5 w-3.5" />
               <span>RFQ</span>
@@ -357,20 +371,20 @@ export const Navigation: React.FC<NavigationProps> = ({
         {isMobileSearchOpen && (
           <div className="px-3.5 pb-2.5 pt-1 border-t border-[#DDE3E1] dark:border-[#24423D] bg-[#FAF9F6] dark:bg-[#162B27] animate-in fade-in duration-150">
             <div className="relative flex items-center">
-              <Search className="absolute left-3 h-4 w-4 text-[#647A7B] dark:text-[#8BA39F] pointer-events-none" />
+              <Search className="absolute left-3 rtl:left-auto rtl:right-3 h-4 w-4 text-[#647A7B] dark:text-[#8BA39F] pointer-events-none" />
               <input
                 type="text"
                 autoFocus
-                placeholder="Search RFQs, suppliers, PO codes..."
+                placeholder={t('nav.mobileSearchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#11211E] py-2 pl-9 pr-9 text-xs text-[#17272A] dark:text-[#EBF1F0] placeholder-[#92A4A3] focus:border-[#173E38] dark:focus:border-[#2E7A6F] focus:outline-none"
+                className="w-full rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#11211E] py-2 pl-9 pr-9 rtl:pl-9 rtl:pr-9 text-xs text-[#17272A] dark:text-[#EBF1F0] placeholder-[#92A4A3] focus:border-[#173E38] dark:focus:border-[#2E7A6F] focus:outline-none"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 p-1 text-[#647A7B] dark:text-[#8BA39F]"
-                  aria-label="Clear search"
+                  className="absolute right-3 rtl:right-auto rtl:left-3 p-1 text-[#647A7B] dark:text-[#8BA39F]"
+                  aria-label={t('common.clearFilter')}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -402,7 +416,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             <span className="absolute top-0 h-0.5 w-6 rounded-full bg-[#173E38] dark:bg-[#4EA89A]" />
           )}
           <TrendingUp className="h-4 w-4 mb-0.5 shrink-0" />
-          <span>Dashboard</span>
+          <span>{t('nav.mobile.dashboard')}</span>
         </button>
 
         {/* 2. RFQs */}
@@ -419,7 +433,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             <span className="absolute top-0 h-0.5 w-6 rounded-full bg-[#173E38] dark:bg-[#4EA89A]" />
           )}
           <FileText className="h-4 w-4 mb-0.5 shrink-0" />
-          <span>RFQs</span>
+          <span>{t('nav.mobile.rfqs')}</span>
         </button>
 
         {/* 3. Bids */}
@@ -436,7 +450,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             <span className="absolute top-0 h-0.5 w-6 rounded-full bg-[#173E38] dark:bg-[#4EA89A]" />
           )}
           <Award className="h-4 w-4 mb-0.5 shrink-0" />
-          <span>Bid Matrix</span>
+          <span>{t('nav.mobile.bids')}</span>
         </button>
 
         {/* 4. Vendors */}
@@ -453,7 +467,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             <span className="absolute top-0 h-0.5 w-6 rounded-full bg-[#173E38] dark:bg-[#4EA89A]" />
           )}
           <Building2 className="h-4 w-4 mb-0.5 shrink-0" />
-          <span>Vendors</span>
+          <span>{t('nav.mobile.vendors')}</span>
         </button>
 
         {/* 5. POs & Governance */}
@@ -470,9 +484,9 @@ export const Navigation: React.FC<NavigationProps> = ({
             <span className="absolute top-0 h-0.5 w-6 rounded-full bg-[#173E38] dark:bg-[#4EA89A]" />
           )}
           <ShoppingCart className="h-4 w-4 mb-0.5 shrink-0" />
-          <span>Orders</span>
+          <span>{t('nav.mobile.orders')}</span>
           {flaggedPosCount > 0 && (
-            <span className="absolute top-1 right-3 h-2 w-2 rounded-full bg-[#A22424]" />
+            <span className="absolute top-1 right-3 rtl:right-auto rtl:left-3 h-2 w-2 rounded-full bg-[#A22424]" />
           )}
         </button>
       </nav>

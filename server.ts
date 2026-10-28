@@ -34,7 +34,7 @@ async function startServer() {
   });
 
   app.post('/api/gemini/copilot', async (req, res) => {
-    const { prompt, context } = req.body;
+    const { prompt, context, locale } = req.body;
 
     if (!ai) {
       return res.json({
@@ -44,7 +44,16 @@ async function startServer() {
     }
 
     try {
-      const systemInstruction = `You are Synthetix Copilot, an elite enterprise Procurement & Strategic Sourcing AI.
+      const isArabic = locale === 'ar' || /[\u0600-\u06FF]/.test(prompt || '');
+
+      const systemInstruction = isArabic
+        ? `أنت مساعد سينثتكس الذكي للتوريد والمشتريات الاستراتيجية المؤسسية (Synthetix Copilot).
+مهمتك تقديم تحليلات دقيقة، مهنية، ومبنية على بيانات المشتريات المتاحة باللغة العربية الفصحى المعاصرة المعتمدة في الإدارات المالية والتنفيذية.
+- عند تقييم العروض: ركز على إجمالي تكلفة الملكية (TCO)، تقييمات الاستدامة والحوكمة (ESG)، فترات التسليم وجداول التوريد، والضمانات.
+- عند فحص أوامر الشراء: طبق بصرامة ضوابط قانون SOX 404، وسقوف الصلاحيات المالية ($250,000+ يتطلب توقيع إعفاء المورد الوحيد نموذج CS-8).
+- احتفظ برموز الطلبات وأوامر الشراء (مثل RFQ-2025-001 و PO-2025-8841)، وأسماء الشركات والمبالغ المالية بدقة ووضوح.
+- اجعل الإجابة موجزة، تنفيذية، ومنسقة بنقاط وعناوين Markdown واضحة.`
+        : `You are Synthetix Copilot, an elite enterprise Procurement & Strategic Sourcing AI.
 Your job is to provide crisp, highly structured, data-grounded procurement advice.
 When evaluating bids: focus on total cost of ownership (TCO), supplier ESG rating, lead time disruption penalties, and contract terms.
 When evaluating POs: strictly enforce SOX delegations, single-source thresholds ($250,000+ requires Form CS-8 Sole-Source waiver), and payment term optimizations.
@@ -97,11 +106,17 @@ User Request: ${prompt}`,
       return res.json({
         liveAvailable: true,
         content: responseText,
-        citations: [
-          'Google Gemini 3.8 Flash (Enterprise Engine)',
-          'SOX Procurement Delegations Register 2025',
-          'Synthetix Supplier ESG Intelligence Index',
-        ],
+        citations: isArabic
+          ? [
+              'نموذج Google Gemini 3.8 Flash (المحرك المؤسسي المباشر)',
+              'سجل تفويضات صلاحيات الشراء وقانون SOX 2025',
+              'مؤشر سينثتكس لذكاء استدامة الموردين (ESG)',
+            ]
+          : [
+              'Google Gemini 3.8 Flash (Enterprise Engine)',
+              'SOX Procurement Delegations Register 2025',
+              'Synthetix Supplier ESG Intelligence Index',
+            ],
       });
     } catch (err: any) {
       console.error('Server-side Gemini generation error:', err);

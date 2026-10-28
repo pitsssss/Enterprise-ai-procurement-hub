@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, X, ShieldCheck, FileCheck } from 'lucide-react';
 import { PurchaseOrder } from '../../types/procurement';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
+import { formatCurrency } from '../../lib/formatters';
 
 interface ResolveSoxWaiverModalProps {
   isOpen: boolean;
@@ -20,9 +22,14 @@ export const ResolveSoxWaiverModal: React.FC<ResolveSoxWaiverModalProps> = ({
   onConfirmWaiver,
   userRole,
 }) => {
-  const [justification, setJustification] = useState(
-    'Sole source exception authorized under FAR 6.302-1: Proprietary IP and OEM tooling compatibility require immediate award without secondary solicitation.'
-  );
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
+
+  const defaultJustification = isArabic
+    ? 'استثناء مبرر للمورد الوحيد بموجب معايير الحوكمة المالية: تتطلب الملكية الفكرية الحصرية ومواصفات المصنع الأصلية الترسية المباشرة دون طرح منافسة ثانوية.'
+    : 'Sole source exception authorized under FAR 6.302-1: Proprietary IP and OEM tooling compatibility require immediate award without secondary solicitation.';
+
+  const [justification, setJustification] = useState(defaultJustification);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agreedToFiduciaryTerms, setAgreedToFiduciaryTerms] = useState(false);
 
@@ -63,19 +70,19 @@ export const ResolveSoxWaiverModal: React.FC<ResolveSoxWaiverModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm sm:text-base font-bold text-[#17272A] dark:text-[#EBF1F0]">
-                  Form CS-8 Sole-Source Waiver
+                  {t('pos.modalTitle')}
                 </h3>
                 <Badge variant="danger" size="sm">SOX Sec 404</Badge>
               </div>
               <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                Fiduciary override for purchase order {purchaseOrder.poNumber} (${purchaseOrder.amount.toLocaleString()} USD)
+                {t('pos.poTarget')}: <bdi dir="ltr">{purchaseOrder.poNumber}</bdi> ({formatCurrency(purchaseOrder.amount)})
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1 rounded-md text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0]"
-            aria-label="Close dialog"
+            aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -86,9 +93,11 @@ export const ResolveSoxWaiverModal: React.FC<ResolveSoxWaiverModalProps> = ({
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
             <div>
-              <p className="font-semibold text-xs">Statutory Compliance Warning</p>
+              <p className="font-semibold text-xs">
+                {isArabic ? 'تحذير الامتثال القانوني والمالي' : 'Statutory Compliance Warning'}
+              </p>
               <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
-                This transaction exceeds the $250,000 corporate threshold without 3 competitive bids. Under Sarbanes-Oxley Section 404 internal control policies, only designated Finance or Admin signatories may execute this waiver.
+                {t('pos.soxHoldNotice')}
               </p>
             </div>
           </div>
@@ -96,29 +105,32 @@ export const ResolveSoxWaiverModal: React.FC<ResolveSoxWaiverModalProps> = ({
 
         {!isAuthorized ? (
           <div className="mt-4 p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs">
-            <p className="font-semibold">Insufficient Role Authority</p>
+            <p className="font-semibold">{isArabic ? 'صلاحيات الدور الوظيفي غير كافية' : 'Insufficient Role Authority'}</p>
             <p className="mt-1 text-[11px]">
-              Your current role is <strong className="font-mono">{userRole}</strong>. Form CS-8 Sole-Source waivers can only be authorized by <strong>FINANCE</strong> or <strong>ADMIN</strong> signatories.
+              {isArabic
+                ? `دورك الحالي هو ${t(`roles.${userRole}`, userRole)}. لا يمكن توقيع نموذج CS-8 إلا بواسطة مفوضي المالية (FINANCE) أو مدراء النظام (ADMIN).`
+                : `Your current role is ${userRole}. Form CS-8 Sole-Source waivers can only be authorized by FINANCE or ADMIN signatories.`}
             </p>
             <p className="mt-2 text-[10px] text-gray-500">
-              Tip: You can switch roles in the Signatory Profile view to test and audit this authorization workflow.
+              {isArabic ? 'تلميح: يمكنك محاكاة تغيير دورك في شاشة ملف المفوض لاختبار هذا المسار.' : 'Tip: You can switch roles in the Signatory Profile view to test and audit this authorization workflow.'}
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                Sole-Source Justification Description
+                {t('pos.fieldJustification')}
               </label>
               <textarea
                 rows={3}
                 required
                 value={justification}
                 onChange={(e) => setJustification(e.target.value)}
+                placeholder={t('pos.justificationPlaceholder')}
                 className="w-full rounded-lg border border-[#DDE3E1] dark:border-[#24423D] bg-white dark:bg-[#162B27] p-2.5 text-xs text-[#17272A] dark:text-[#EBF1F0] focus:border-[#173E38] focus:outline-none"
               />
               <p className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
-                This statement will be permanently recorded in the immutable audit log and submitted to external auditors.
+                {t('pos.fidoNotice')}
               </p>
             </div>
 
@@ -131,13 +143,15 @@ export const ResolveSoxWaiverModal: React.FC<ResolveSoxWaiverModalProps> = ({
                 className="mt-0.5 h-4 w-4 rounded border-[#DDE3E1] text-[#173E38] focus:ring-[#173E38]"
               />
               <span className="text-[11px] text-[#34484B] dark:text-[#C2D3CF] leading-normal">
-                I attest as an authorized corporate signatory that sole-source procurement terms have been vetted, vendor pricing is fair and reasonable, and no conflicts of interest exist.
+                {isArabic
+                  ? 'أقر بصفتي مفوضاً معتمداً بأن شروط التوريد من مصدر وحيد قد تم فحصها، وأن الأسعار عادلة ومعقولة، ولا يوجد أي تعارض مصالح.'
+                  : 'I attest as an authorized corporate signatory that sole-source procurement terms have been vetted, vendor pricing is fair and reasonable, and no conflicts of interest exist.'}
               </span>
             </label>
 
             <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-[#DDE3E1] dark:border-[#24423D]">
               <Button variant="secondary" size="md" onClick={onClose} type="button">
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -147,7 +161,7 @@ export const ResolveSoxWaiverModal: React.FC<ResolveSoxWaiverModalProps> = ({
                 disabled={!agreedToFiduciaryTerms}
                 leftIcon={<ShieldCheck className="h-4 w-4" />}
               >
-                Sign Form CS-8 & Release Hold
+                {t('pos.btnAuthorizeWaiver')}
               </Button>
             </div>
           </form>

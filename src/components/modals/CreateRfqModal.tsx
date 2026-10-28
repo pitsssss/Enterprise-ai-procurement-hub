@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -31,6 +32,9 @@ export const CreateRfqModal: React.FC<CreateRfqModalProps> = ({
   setDepartment,
   onSubmit,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === 'ar';
+
   if (!isOpen) return null;
 
   return (
@@ -51,17 +55,17 @@ export const CreateRfqModal: React.FC<CreateRfqModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-bold text-[#17272A] dark:text-[#EBF1F0]">
-                Draft Capital Requisition
+                {t('rfq.modalTitle')}
               </h3>
               <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                Automated SOX dual-approval guidelines will apply.
+                {t('rfq.modalSubtitle')}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1 rounded-md text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0]"
-            aria-label="Close dialog"
+            aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -70,29 +74,29 @@ export const CreateRfqModal: React.FC<CreateRfqModalProps> = ({
         {/* Form Body */}
         <form onSubmit={onSubmit} className="mt-4 space-y-3.5">
           <Input
-            label="Requisition Title"
+            label={t('rfq.fieldTitle')}
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Next-Gen Enterprise Fiber Switches Batch C"
+            placeholder={isArabic ? 'مثال: توريد أجهزة خوادم ومحولات شبكية دفعة ج' : 'e.g. Next-Gen Enterprise Fiber Switches Batch C'}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select
-              label="Sourcing Portfolio Category"
+              label={t('rfq.fieldCategory')}
               value={category}
               onChange={(e) => setCategory(e.target.value as any)}
               options={[
-                { value: 'IT Hardware', label: 'IT Hardware' },
-                { value: 'Precision Machining', label: 'Precision Machining' },
-                { value: 'Facility Operations', label: 'Facility Operations' },
-                { value: 'Logistics', label: 'Logistics & Distribution' },
-                { value: 'Raw Materials', label: 'Raw Materials' },
+                { value: 'IT Hardware', label: isArabic ? 'أجهزة تقنية المعلومات' : 'IT Hardware' },
+                { value: 'Precision Machining', label: isArabic ? 'التشغيل الدقيق والمعادن' : 'Precision Machining' },
+                { value: 'Facility Operations', label: isArabic ? 'عمليات المرافق والتشغيل' : 'Facility Operations' },
+                { value: 'Logistics', label: isArabic ? 'اللوجستيات والشحن' : 'Logistics & Distribution' },
+                { value: 'Raw Materials', label: isArabic ? 'المواد الخام الأولية' : 'Raw Materials' },
               ]}
             />
 
             <Input
-              label="Authorized Budget Ceiling ($)"
+              label={t('rfq.fieldBudget')}
               type="number"
               required
               value={budget}
@@ -102,24 +106,28 @@ export const CreateRfqModal: React.FC<CreateRfqModalProps> = ({
           </div>
 
           <Input
-            label="Requesting Department / Cost Center"
+            label={t('rfq.fieldDept')}
             required
             value={department}
             onChange={(e) => setDepartment(e.target.value)}
-            placeholder="e.g. Infrastructure Platform Engineering"
+            placeholder={isArabic ? 'مثال: هندسة البنية التحتية والمراكز' : 'e.g. Infrastructure Platform Engineering'}
           />
 
           <div className="rounded-lg bg-[#FAF9F6] dark:bg-[#162B27] p-3 text-[11px] text-[#34484B] dark:text-[#C2D3CF] border border-[#DDE3E1] dark:border-[#24423D] leading-relaxed">
-            <strong className="text-[#17272A] dark:text-[#EBF1F0]">SOX Compliance Pre-Check: </strong>
-            Requisitions exceeding $250,000 USD will automatically enforce a minimum 3-vendor competitive bidding window and require Group Treasury co-signature.
+            <strong className="text-[#17272A] dark:text-[#EBF1F0]">
+              {isArabic ? 'الفحص المسبق لامتثال SOX: ' : 'SOX Compliance Pre-Check: '}
+            </strong>
+            {isArabic
+              ? 'الطلبات التي تتجاوز $250,000 USD ستفرض تلقائياً نافذة منافسة لـ 3 موردين مستقلين على الأقل وتتطلب توقيع مسؤول الخزينة.'
+              : 'Requisitions exceeding $250,000 USD will automatically enforce a minimum 3-vendor competitive bidding window and require Group Treasury co-signature.'}
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2.5">
             <Button variant="secondary" size="md" onClick={onClose} type="button">
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="primary" size="md" type="submit">
-              Publish RFQ to Vendor Network
+              {t('rfq.btnCreate')}
             </Button>
           </div>
         </form>
