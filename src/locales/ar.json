@@ -321,7 +321,12 @@
     "p2": "اشرح سبب تعليق أمر الشراء PO-2025-8841 طبقاً لضوابط SOX",
     "p3": "لخّص مخاطر أداء الموردين في فئة أجهزة تقنية المعلومات",
     "p4": "صِغ مسوغاً ائتمانياً لنموذج استثناء المورد الوحيد CS-8",
-    "citations": "المراجع والمصادر الائتمانية"
+    "citations": "المراجع والمصادر الائتمانية",
+    "initialWelcome": "مرحباً بك في Synthetix Sourcing. مساحة عمل Firestore الفورية مفعلة مع ضوابط التوقيع الثنائي بموجب SOX 404 وسجلات التدقيق غير القابلة للتعديل.",
+    "actionInspectFlagged": "فحص استثناءات أوامر الشراء المقيدة",
+    "actionOpenMatrix": "فتح مصفوفة مقارنة عروض الموردين",
+    "actionInspectLedger": "فحص سجل استثناءات أوامر الشراء",
+    "fallbackEvaluated": "تم تقييم مسار المشتريات مقابل ضوابط الإنفاق الداخلية. جميع المعاملات ضمن الصلاحيات المعتمدة."
   },
   "notifications": {
     "title": "إشعارات وتنبيهات التوريد",
@@ -353,5 +358,47 @@
     "fieldNotes": "الأولويات والتحديات الشرائية الرئيسية",
     "btnSubmit": "طلب الجلسة الاستشارية",
     "success": "تم تسجيل طلبك بنجاح. سيتواصل فريقنا معك خلال ساعتي عمل."
+  },
+  "toasts": {
+    "dualSignoffTitle": "تم التوقيع الثنائي بنجاح",
+    "dualSignoffDesc": "تم اعتماد {{poNumber}} ومزامنته مع نظام SAP S/4HANA.",
+    "approvalFailedTitle": "فشل الاعتماد",
+    "permissionsDeniedTitle": "صلاحيات غير كافية",
+    "permissionsDeniedDesc": "الدور الوظيفي {{role}} غير مفوض لتنفيذ هذا الإجراء.",
+    "soxClearedTitle": "تمت تسوية استثناء SOX",
+    "soxClearedDesc": "تم تفويض إعفاء المورد الوحيد Form CS-8 لأمر الشراء {{poNumber}}.",
+    "waiverFailedTitle": "فشل تفويض الإعفاء",
+    "awardFinalizedTitle": "تمت ترسية العقد بنجاح",
+    "awardFinalizedDesc": "تمت الترسية على {{vendorName}}. أُنشئ أمر الشراء {{poNumber}}{{holdSuffix}}.",
+    "awardHoldSuffix": " (تم تطبيق قيد SOX)",
+    "awardFailedTitle": "فشلت الترسية",
+    "reqPublishedTitle": "تم نشر طلب الشراء",
+    "reqPublishedDesc": "طلب {{rfqNumber}} محفوظ ومتاح الآن في قاعدة بيانات المنظمة.",
+    "reqFailedTitle": "فشل إنشاء طلب الشراء"
+  },
+  "categories": {
+    "IT Hardware": "عتاد تكنولوجيا المعلومات",
+    "Precision Machining": "تصنيع دقيق وهندسة ميكانيكية",
+    "Facility Operations": "عمليات وتشغيل المرافق",
+    "Logistics": "خدمات لوجستية وسلاسل إمداد",
+    "Raw Materials": "مواد خام ومستلزمات إنتاج",
+    "Enterprise Cloud Computing": "حوسبة سحابية مؤسسية",
+    "Semiconductor Packaging": "تغليف أشباه الموصلات"
+  },
+  "countries": {
+    "United States": "الولايات المتحدة",
+    "Switzerland": "سويسرا",
+    "Germany": "ألمانيا",
+    "Japan": "اليابان",
+    "Taiwan": "تايوان"
+  },
+  "errors": {
+    "permissionDenied": "تم رفض الوصول: ليس لديك الصلاحيات الكافية لتنفيذ {{action}} على {{entityType}}. يرجى التحقق من دورك في المنظمة.",
+    "notFound": "تعذر العثور على {{entityType}} المطلوب. قد يكون قد حُذف.",
+    "alreadyExists": "يوجد {{entityType}} بهذا المعرف مسبقاً في مساحة العمل.",
+    "resourceExhausted": "تم بلوغ الحد الأقصى لطلبات قاعدة البيانات. يرجى الانتظار قليلاً ثم إعادة المحاولة.",
+    "failedPrecondition": "تم إلغاء العملية: سجل الشراء في حالة لا تسمح بالتعديل بموجب ضوابط SOX.",
+    "unauthenticated": "انتهت صلاحية جلستك. يرجى تسجيل الدخول مجدداً بحسابك المؤسسي.",
+    "generic": "حدث خطأ أثناء حفظ التغييرات. يرجى إعادة المحاولة."
   }
 }

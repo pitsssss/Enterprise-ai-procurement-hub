@@ -26,12 +26,24 @@ import { formatCurrency } from '../../lib/formatters';
 
 export const UserProfileView: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { user, profile, organization, currentMember, userRole, switchRole, updateProfileData, signOutUser } = useAuth();
+  const {
+    user,
+    profile,
+    organization,
+    currentMember,
+    actualRole,
+    userRole,
+    isSimulatingRole,
+    switchRole,
+    clearRoleSimulation,
+    updateProfileData,
+    signOutUser,
+  } = useAuth();
   const [displayName, setDisplayName] = useState(profile?.displayName || user?.displayName || 'Enterprise Signatory');
   const [department, setDepartment] = useState(profile?.department || 'Global Sourcing & Supply Chain');
   const [title, setTitle] = useState(profile?.title || 'VP of Strategic Procurement');
-  const [language, setLanguage] = useState<SupportedLanguage>((i18n.language === 'ar' ? 'ar' : 'en'));
-  const [selectedRole, setSelectedRole] = useState<UserRole>(userRole);
+  const [language, setLanguage] = useState<SupportedLanguage>(i18n.language === 'ar' ? 'ar' : 'en');
+  const [previewRole, setPreviewRole] = useState<UserRole>(userRole);
   const [isUpdating, setIsUpdating] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -51,10 +63,6 @@ export const UserProfileView: React.FC = () => {
         language,
       });
 
-      if (selectedRole !== userRole) {
-        await switchRole(selectedRole);
-      }
-
       setSaveMessage(t('profile.saveSuccess'));
       setTimeout(() => setSaveMessage(null), 2500);
     } catch (err: any) {
@@ -62,6 +70,16 @@ export const UserProfileView: React.FC = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleApplyRolePreview = async (role: UserRole) => {
+    setPreviewRole(role);
+    await switchRole(role);
+  };
+
+  const handleResetPreview = async () => {
+    setPreviewRole(actualRole);
+    clearRoleSimulation();
   };
 
   const getRoleBadgeVariant = (role: UserRole) => {
@@ -167,7 +185,7 @@ export const UserProfileView: React.FC = () => {
           <div className="text-left rtl:text-right sm:border-l rtl:sm:border-l-0 rtl:sm:border-r sm:border-[#DDE3E1] sm:dark:border-[#24423D] sm:pl-5 rtl:sm:pl-0 rtl:sm:pr-5">
             <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">{t('profile.currentLimit')}</p>
             <p className="text-xl font-bold tabular-nums text-[#173E38] dark:text-[#4EA89A]">
-              {formatCurrency(getDelegatedLimit(userRole))}
+              {formatCurrency(getDelegatedLimit(actualRole))}
             </p>
             <span className="text-[10px] text-[#1B6A4A] dark:text-[#38B482]">
               {t('org.soxExplanation')}
@@ -175,33 +193,59 @@ export const UserProfileView: React.FC = () => {
           </div>
         </div>
 
-        {/* Role Delegation Switcher */}
+        {/* Role Preview Mode (Isolated Simulation - Does Not Alter Real Database Permissions) */}
         <div className="p-3.5 rounded-xl bg-[#FAF9F6] dark:bg-[#162B27] border border-[#DDE3E1] dark:border-[#24423D] space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <span className="text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0] flex items-center gap-1.5">
               <UserCheck className="h-4 w-4 text-[#C17C43] dark:text-[#D48D55]" />
-              {t('profile.roleSwitcher')}
+              {i18n.language === 'ar' ? 'معاينة صلاحيات الأدوار (محاكاة واجهة فقط)' : 'UI Role Preview Mode (Simulation Preview Only)'}
             </span>
-            <span className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
-              {t('profile.roleNotice')}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
+                {i18n.language === 'ar' ? `الدور الحقيقي المثبت: ${t(`roles.${actualRole}`, actualRole)}` : `Assigned Role: ${actualRole}`}
+              </span>
+              {isSimulatingRole && (
+                <button
+                  type="button"
+                  onClick={handleResetPreview}
+                  className="text-[10px] text-[#A22424] dark:text-[#EA5454] font-semibold underline hover:no-underline"
+                >
+                  {i18n.language === 'ar' ? 'إلغاء المعاينة' : 'Exit Preview'}
+                </button>
+              )}
+            </div>
           </div>
 
+          <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F] leading-relaxed">
+            {i18n.language === 'ar'
+              ? 'تتيح هذه الأداة معاينة مظهر وتدفقات الواجهة للأدوار المختلفة. لا تؤثر المعاينة على قواعد أمان قاعدة البيانات أو تمنح صلاحيات حقيقية.'
+              : 'This control lets you test UI workflows from other role perspectives. It does NOT modify database authorization or bypass Firestore security rules.'}
+          </p>
+
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
-            {(['ADMIN', 'PROCUREMENT_MANAGER', 'BUYER', 'APPROVER', 'FINANCE', 'AUDITOR'] as UserRole[]).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setSelectedRole(r)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border text-center ${
-                  selectedRole === r
-                    ? 'bg-[#173E38] text-white border-[#173E38] dark:bg-[#2E7A6F] shadow-xs'
-                    : 'bg-white dark:bg-[#11211E] text-[#647A7B] dark:text-[#8BA39F] border-[#DDE3E1] dark:border-[#24423D] hover:bg-[#FAF9F6]'
-                }`}
-              >
-                {t(`roles.${r}`, r)}
-              </button>
-            ))}
+            {(['ADMIN', 'PROCUREMENT_MANAGER', 'BUYER', 'APPROVER', 'FINANCE', 'AUDITOR'] as UserRole[]).map((r) => {
+              const isSelected = userRole === r;
+              const isActual = actualRole === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => handleApplyRolePreview(r)}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border text-center flex flex-col items-center justify-center gap-0.5 ${
+                    isSelected
+                      ? 'bg-[#173E38] text-white border-[#173E38] dark:bg-[#2E7A6F] shadow-xs'
+                      : 'bg-white dark:bg-[#11211E] text-[#647A7B] dark:text-[#8BA39F] border-[#DDE3E1] dark:border-[#24423D] hover:bg-[#FAF9F6]'
+                  }`}
+                >
+                  <span>{t(`roles.${r}`, r)}</span>
+                  {isActual && (
+                    <span className="text-[9px] opacity-80 font-normal">
+                      ({i18n.language === 'ar' ? 'المعيّن' : 'Assigned'})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -271,11 +315,17 @@ export const UserProfileView: React.FC = () => {
             <div className="flex items-center gap-2.5">
               <ShieldCheck className="h-4 w-4 text-[#173E38] dark:text-[#4EA89A]" />
               <div>
-                <p className="text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">Google Authenticator OTP</p>
-                <p className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">Encrypted Cloud Backup • Synced</p>
+                <p className="text-xs font-semibold text-[#17272A] dark:text-[#EBF1F0]">
+                  {i18n.language === 'ar' ? 'تطبيق Google Authenticator' : 'Google Authenticator OTP'}
+                </p>
+                <p className="text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
+                  {i18n.language === 'ar' ? 'نسخ احتياطي سحابي مشفر • متزامن' : 'Encrypted Cloud Backup • Synced'}
+                </p>
               </div>
             </div>
-            <Badge variant="default" size="sm">Backup</Badge>
+            <Badge variant="default" size="sm">
+              {i18n.language === 'ar' ? 'احتياطي' : 'Backup'}
+            </Badge>
           </div>
         </div>
       </Card>

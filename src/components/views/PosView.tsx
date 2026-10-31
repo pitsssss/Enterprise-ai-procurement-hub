@@ -227,7 +227,7 @@ export const PosView: React.FC<PosViewProps> = ({
                 <div className="pt-2 border-t border-[#DDE3E1] dark:border-[#24423D] flex items-center justify-between text-xs">
                   <span className="text-[#1B6A4A] dark:text-[#38B482] font-medium flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    {isArabic ? 'متزامن مع سجل SAP S/4HANA' : 'Synced to SAP S/4HANA Ledger'}
+                    {isArabic ? 'متزامن مع سجل SAP S/4HANA (محاكاة)' : 'Synced to SAP S/4HANA Ledger (Simulated)'}
                   </span>
                   <span className="font-mono text-[10px] text-[#647A7B] dark:text-[#8BA39F]">
                     <bdi dir="ltr">Doc: #SAP-{po.poNumber.slice(-4)}</bdi>

@@ -1,4 +1,5 @@
 import { ChatMessage, RFQ, PurchaseOrder, VendorBid } from '../types/procurement';
+import { auth } from '../lib/firebase';
 
 export interface AssistantContext {
   activeRfq?: RFQ | null;
@@ -19,42 +20,50 @@ export class ProcurementAIService {
     // 1. Attempt Server-Side Gemini API call via secure proxy route
     if (preferLiveModel) {
       try {
-        const response = await fetch('/api/gemini/copilot', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, context, locale: isArabic ? 'ar' : 'en' }),
-        });
+        const currentUser = auth.currentUser;
+        const idToken = currentUser ? await currentUser.getIdToken() : null;
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.liveAvailable && data?.content) {
-            // Check if we should attach contextual suggested actions
-            let suggestedAction: ChatMessage['suggestedAction'] = undefined;
-            const lowerPrompt = prompt.toLowerCase();
-            if (lowerPrompt.includes('compare') || lowerPrompt.includes('bid') || lowerPrompt.includes('matrix')) {
-              suggestedAction = {
-                label: 'Open Vendor Comparison Matrix',
-                actionType: 'OPEN_COMPARISON',
-                payload: context.activeRfq?.id || 'rfq-101',
-              };
-            } else if (lowerPrompt.includes('flag') || lowerPrompt.includes('audit') || lowerPrompt.includes('po')) {
-              suggestedAction = {
-                label: 'Inspect Flagged PO Ledger',
-                actionType: 'NAVIGATE_TAB',
-                payload: 'pos',
+        if (idToken) {
+          const response = await fetch('/api/gemini/copilot', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ prompt, context, locale: isArabic ? 'ar' : 'en' }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data?.liveAvailable && data?.content) {
+              // Check if we should attach contextual suggested actions
+              let suggestedAction: ChatMessage['suggestedAction'] = undefined;
+              const lowerPrompt = prompt.toLowerCase();
+              if (lowerPrompt.includes('compare') || lowerPrompt.includes('bid') || lowerPrompt.includes('matrix')) {
+                suggestedAction = {
+                  label: 'Open Vendor Comparison Matrix',
+                  actionType: 'OPEN_COMPARISON',
+                  payload: context.activeRfq?.id || 'rfq-101',
+                };
+              } else if (lowerPrompt.includes('flag') || lowerPrompt.includes('audit') || lowerPrompt.includes('po')) {
+                suggestedAction = {
+                  label: 'Inspect Flagged PO Ledger',
+                  actionType: 'NAVIGATE_TAB',
+                  payload: 'pos',
+                };
+              }
+
+              return {
+                sender: 'assistant',
+                mode: 'GEMINI_LIVE',
+                content: data.content,
+                citations: data.citations || [
+                  'Google Gemini 3.8 Flash (Server Enterprise Model)',
+                  'Corporate Fiduciary Policy (SOX 404 Framework)',
+                ],
+                suggestedAction,
               };
             }
-
-            return {
-              sender: 'assistant',
-              mode: 'GEMINI_LIVE',
-              content: data.content,
-              citations: data.citations || [
-                'Google Gemini 3.8 Flash (Server Enterprise Model)',
-                'SOX Delegations Register 2025',
-              ],
-              suggestedAction,
-            };
           }
         }
       } catch (err) {
@@ -144,8 +153,37 @@ export class ProcurementAIService {
       lower.includes('compliance') ||
       lower.includes('po-2025-10493') ||
       lower.includes('audit') ||
-      lower.includes('sox')
+      lower.includes('sox') ||
+      lower.includes('امتثال') ||
+      lower.includes('تعليق') ||
+      lower.includes('استثناء')
     ) {
+      if (isArabic) {
+        return {
+          sender: 'assistant',
+          mode: 'SIMULATED_PRESET',
+          content: `### 🚨 استثناء امتثال أوامر الشراء: PO-2025-10493
+
+- **المورد:** Global Silicon Wafer Corp
+- **المبلغ الملتزم به:** $512,000 USD
+- **مخالفة السياسة المؤسسية:** تنص سياسة الحوكمة §11.4 على تحديد سقف الترسية الفردية بمبلغ **$250,000** دون شهادة إعفاء قانوني (Form CS-8).
+- **مستوى المخاطرة:** المورد حالياً تحت الوضع **التجريبي / تحت المراقبة** بنسبة تسليم في الموعد 82.5%.
+
+**مسار المعالجة المعتمد:**
+1. إنشاء وإرفاق **مسوغ الترسية للمورد الوحيد (Form CS-8)** معتمد من الإدارة القانونية، أو
+2. إطلاق منافسة مصغرة ثلاثية عاجلة لاستعادة الامتثال لسياسة التوريد المزدوج.`,
+          citations: [
+            'دليل حوكمة الشركات وتفويضات SOX ص 52',
+            'سجل تقييم مخاطر الموردين Q1-2025',
+          ],
+          suggestedAction: {
+            label: 'فحص سجل استثناءات أوامر الشراء',
+            actionType: 'NAVIGATE_TAB',
+            payload: 'pos',
+          },
+        };
+      }
+
       return {
         sender: 'assistant',
         mode: 'SIMULATED_PRESET',
@@ -171,7 +209,28 @@ export class ProcurementAIService {
       };
     }
 
-    if (lower.includes('saving') || lower.includes('spend') || lower.includes('cost') || lower.includes('benchmark')) {
+    if (
+      lower.includes('saving') ||
+      lower.includes('spend') ||
+      lower.includes('cost') ||
+      lower.includes('benchmark') ||
+      lower.includes('وفورات') ||
+      lower.includes('إنفاق') ||
+      lower.includes('تكلفة')
+    ) {
+      if (isArabic) {
+        return {
+          sender: 'assistant',
+          mode: 'SIMULATED_PRESET',
+          content: `### 📈 مؤشرات أداء التوريد وذكاء الوفورات المالية (حتى تاريخه)
+
+- **الوفورات المحققة بالتفاوض:** **$148,200 USD** (متوسط خفض 12.4% عبر جميع طلبات العروض المغلقة).
+- **فرصة التوفير الفورية:** مثبتات التيتانيوم (RFQ-2025-0892) مسعرة حالياً بـ $92,000 (8.2% أعلى من خط الأساس للميزانية). دمج الكميات مع AeroPrecision Alloys يمكن أن يسترد نحو ~$8,500 بموجب شروط حوافز الحجم للفئة الأولى.
+- **تغطية العقود:** 78% من الإنفاق النشط يندرج تحت اتفاقيات خدمات رئيسية معتمدة (MSAs).`,
+          citations: ['مؤشر ذكاء الأسعار v3', 'المؤشر العالمي لأسعار المواد 2025'],
+        };
+      }
+
       return {
         sender: 'assistant',
         mode: 'SIMULATED_PRESET',
@@ -184,7 +243,33 @@ export class ProcurementAIService {
       };
     }
 
-    if (lower.includes('draft') || lower.includes('counter') || lower.includes('378,000')) {
+    if (
+      lower.includes('draft') ||
+      lower.includes('counter') ||
+      lower.includes('378,000') ||
+      lower.includes('مسودة') ||
+      lower.includes('عرض مضاد')
+    ) {
+      if (isArabic) {
+        return {
+          sender: 'assistant',
+          mode: 'SIMULATED_PRESET',
+          content: `### 📝 مسودة العرض التجاري المضاد: Apex Data
+
+**الموضوع:** بشأن تحسين الشروط التجارية لعرض RFQ-2025-0891
+**المبلغ المستهدف:** $378,000 USD (شروط سداد صافي 45 يوماً)
+
+*السادة فريق المبيعات التجارية في Apex،*
+
+نشكركم على تقديم عرضكم الشامل لطلب RFQ-2025-0891 (عرض رقم QU-APX-8821). نثمّن شراكتنا الاستراتيجية كشريك فئة أولى وثقتنا العالية بجدولكم الزمني المحدد بـ 4 أسابيع.
+
+لإتمام الترسية والتعاقد اليوم، اعتمدت لجنة المشتريات عرضاً مضاداً بقيمة **$378,000 USD**، وهو ما يتوافق مع سقف مخصصات الربع الثاني لأجهزة الحوسبة. تسري جميع شروط الضمان المؤسسي الممتد لمدة 36 شهراً.
+
+يرجى تأكيد موافقتكم لإصدار أمر الشراء المعتمد فوراً.`,
+          citations: ['إطار التفاوض المؤسسي v2', 'الشروط التجارية القياسية Net 45'],
+        };
+      }
+
       return {
         sender: 'assistant',
         mode: 'SIMULATED_PRESET',
@@ -204,7 +289,27 @@ Please confirm acceptance to issue immediate purchase order dispatch.`,
       };
     }
 
-    if (lower.includes('create') || lower.includes('spec') || lower.includes('feasibility')) {
+    if (
+      lower.includes('create') ||
+      lower.includes('spec') ||
+      lower.includes('feasibility') ||
+      lower.includes('مواصفات') ||
+      lower.includes('جدوى')
+    ) {
+      if (isArabic) {
+        return {
+          sender: 'assistant',
+          mode: 'SIMULATED_PRESET',
+          content: `### 📝 تدقيق الجدوى الفنية لبنود التوريد
+
+**هدف الفحص:** ${context.activeRfq?.rfqNumber || 'RFQ-2025-0891'}
+- **التحقق من المواصفات:** جميع بنود المنتجات تتطابق مع معايير كبائن Open19 / OCP وبنية PCIe Gen 5.
+- **جاهزية سلاسل الإمداد:** مدة التوريد القياسية لوحدات H200 SXM5 تتراوح بين 4 إلى 6 أسابيع عالمياً؛ ويتوفر لدى 3 موردين معتمدين مخزون مخصص.
+- **واقعية الميزانية:** توفر الميزانية الحالية ($420,000) هامش أمان بنسبة 7.5% مقارنة بأسعار السوق الفورية.`,
+          citations: ['معايير عتاد OCP', 'المؤشر العالمي لسلاسل الإمداد Q1-2025'],
+        };
+      }
+
       return {
         sender: 'assistant',
         mode: 'SIMULATED_PRESET',

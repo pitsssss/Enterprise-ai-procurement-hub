@@ -321,7 +321,12 @@
     "p2": "Explain why PO-2025-8841 is flagged with a SOX hold",
     "p3": "Summarize supplier performance risks in IT Hardware",
     "p4": "Draft justification for Form CS-8 Sole-Source Waiver",
-    "citations": "Citations & Fiduciary Sources"
+    "citations": "Citations & Fiduciary Sources",
+    "initialWelcome": "Welcome to Synthetix Sourcing. Real-time Firestore workspace active with SOX Section 404 dual-signoff policies and immutable audit tracking.",
+    "actionInspectFlagged": "Inspect Flagged PO Exceptions",
+    "actionOpenMatrix": "Open Vendor Comparison Matrix",
+    "actionInspectLedger": "Inspect Flagged PO Ledger",
+    "fallbackEvaluated": "Pipeline evaluated against internal spend controls. All parameters remain within authorized delegations."
   },
   "notifications": {
     "title": "Procurement Notifications",
@@ -353,5 +358,47 @@
     "fieldNotes": "Key Procurement Imperatives",
     "btnSubmit": "Request Briefing",
     "success": "Briefing request registered. Our team will contact you within 2 business hours."
+  },
+  "toasts": {
+    "dualSignoffTitle": "Dual Sign-Off Executed",
+    "dualSignoffDesc": "{{poNumber}} approved and synchronized to SAP S/4HANA.",
+    "approvalFailedTitle": "Approval Failed",
+    "permissionsDeniedTitle": "Insufficient Permissions",
+    "permissionsDeniedDesc": "Role {{role}} is not authorized for this action.",
+    "soxClearedTitle": "SOX Exception Cleared",
+    "soxClearedDesc": "Form CS-8 Sole-Source waiver authorized for {{poNumber}}.",
+    "waiverFailedTitle": "Waiver Authorization Failed",
+    "awardFinalizedTitle": "Contract Award Finalized",
+    "awardFinalizedDesc": "{{vendorName}} awarded. {{poNumber}} generated{{holdSuffix}}.",
+    "awardHoldSuffix": " (SOX Hold applied)",
+    "awardFailedTitle": "Award Finalization Failed",
+    "reqPublishedTitle": "Requisition Published",
+    "reqPublishedDesc": "{{rfqNumber}} is now persistent in the organization database.",
+    "reqFailedTitle": "Requisition Creation Failed"
+  },
+  "categories": {
+    "IT Hardware": "IT Hardware",
+    "Precision Machining": "Precision Machining",
+    "Facility Operations": "Facility Operations",
+    "Logistics": "Logistics",
+    "Raw Materials": "Raw Materials",
+    "Enterprise Cloud Computing": "Enterprise Cloud Computing",
+    "Semiconductor Packaging": "Semiconductor Packaging"
+  },
+  "countries": {
+    "United States": "United States",
+    "Switzerland": "Switzerland",
+    "Germany": "Germany",
+    "Japan": "Japan",
+    "Taiwan": "Taiwan"
+  },
+  "errors": {
+    "permissionDenied": "Access Denied: You do not have sufficient permissions to {{action}} this {{entityType}}. Verify your organization role.",
+    "notFound": "The requested {{entityType}} could not be found. It may have been removed.",
+    "alreadyExists": "A {{entityType}} with this identifier already exists in your workspace.",
+    "resourceExhausted": "Database request limit reached. Please wait a moment and try again.",
+    "failedPrecondition": "Operation aborted: The procurement record is in a state that cannot be modified under SOX policies.",
+    "unauthenticated": "Your session has expired. Please sign in again with your enterprise account.",
+    "generic": "An error occurred while saving your changes. Please retry."
   }
 }

@@ -94,14 +94,14 @@ export const BidsView: React.FC<BidsViewProps> = ({
                 <span className="font-mono text-xs font-bold text-[#173E38] dark:text-[#4EA89A]" dir="ltr">
                   {activeRfq.rfqNumber}
                 </span>
-                <Badge variant="primary" size="sm">{activeRfq.category}</Badge>
+                <Badge variant="primary" size="sm">{t(`categories.${activeRfq.category}`, { defaultValue: activeRfq.category })}</Badge>
                 <Badge variant="default" size="sm">{activeRfq.department}</Badge>
               </div>
               <h2 className="text-sm sm:text-base font-bold text-[#17272A] dark:text-[#EBF1F0]">
                 {activeRfq.title}
               </h2>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                {t('rfq.colBudget')}: <strong className="text-[#17272A] dark:text-[#EBF1F0]">{formatCurrency(activeRfq.budget)}</strong> • {t('rfq.lineItems')}: {activeRfq.lineItems.length} SKUs
+                {t('rfq.colBudget')}: <strong className="text-[#17272A] dark:text-[#EBF1F0]">{formatCurrency(activeRfq.budget)}</strong> • {t('rfq.lineItems')}: {activeRfq.lineItems.length} {isArabic ? 'بنود' : 'SKUs'}
               </p>
             </div>
 

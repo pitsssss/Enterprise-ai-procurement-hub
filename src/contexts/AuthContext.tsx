@@ -10,7 +10,6 @@ import {
 import {
   getOrCreateUserProfile,
   updateUserProfile as updateProfileDoc,
-  updateOrganizationMemberRole,
 } from '../services/firestoreService';
 import { setAppLanguage } from '../i18n';
 import i18n from '../i18n';
@@ -29,12 +28,16 @@ interface AuthContextType {
   profile: UserProfile | null;
   organization: Organization | null;
   currentMember: OrganizationMember | null;
+  actualRole: UserRole;
   userRole: UserRole;
+  isSimulatingRole: boolean;
+  simulatedRole: UserRole | null;
   loading: boolean;
   authError: string | null;
   signInWithGoogle: () => Promise<void>;
   signOutUser: () => Promise<void>;
-  switchRole: (role: UserRole) => Promise<void>;
+  switchRole: (role: UserRole | null) => Promise<void>;
+  clearRoleSimulation: () => void;
   updateProfileData: (updates: Partial<UserProfile>) => Promise<void>;
   canPerform: (permission: ProcurementPermission) => boolean;
 }
@@ -46,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [currentMember, setCurrentMember] = useState<OrganizationMember | null>(null);
+  const [simulatedRole, setSimulatedRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -80,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setOrganization(null);
         setCurrentMember(null);
+        setSimulatedRole(null);
       }
       setLoading(false);
     });
@@ -93,7 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
       console.error('Google Sign-In failed:', err);
-      // Suppress benign popup closure by user
       if (err.code !== 'auth/popup-closed-by-user') {
         setAuthError(err.message || 'Google authentication failed.');
       }
@@ -107,40 +111,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       setOrganization(null);
       setCurrentMember(null);
+      setSimulatedRole(null);
     } catch (err: any) {
       console.error('Sign out error:', err);
     }
   };
 
-  const userRole: UserRole = currentMember?.role || 'BUYER';
+  // Real immutable role from persistent Firestore record
+  const actualRole: UserRole = currentMember?.role || 'BUYER';
 
-  const switchRole = async (newRole: UserRole) => {
-    if (!user || !organization) return;
-    try {
-      await updateOrganizationMemberRole(
-        organization.id,
-        user.uid,
-        user.email || 'user@synthetix.corp',
-        newRole,
-        {
-          uid: user.uid,
-          email: user.email || 'user@synthetix.corp',
-          role: userRole,
-        }
-      );
-      setCurrentMember((prev) => (prev ? { ...prev, role: newRole } : null));
-    } catch (err: any) {
-      console.error('Role switch failed:', err);
-      // Local fallback for testing session if rules permit
-      setCurrentMember((prev) => (prev ? { ...prev, role: newRole } : null));
+  // Active UI role: If simulation is active, UI previews that role; otherwise real role
+  const userRole: UserRole = simulatedRole || actualRole;
+  const isSimulatingRole = Boolean(simulatedRole);
+
+  // Strictly isolated client-only simulation switcher (NEVER alters database or security privileges)
+  const switchRole = async (newRole: UserRole | null) => {
+    if (newRole === actualRole || newRole === null) {
+      setSimulatedRole(null);
+    } else {
+      setSimulatedRole(newRole);
     }
+  };
+
+  const clearRoleSimulation = () => {
+    setSimulatedRole(null);
   };
 
   const updateProfileData = async (updates: Partial<UserProfile>) => {
     if (!user) return;
     try {
-      await updateProfileDoc(user.uid, updates);
-      setProfile((prev) => (prev ? { ...prev, ...updates } : null));
+      // Safe profile update (does not modify role or permissions)
+      const safeUpdates: Partial<UserProfile> = {
+        displayName: updates.displayName,
+        department: updates.department,
+        title: updates.title,
+        language: updates.language,
+        theme: updates.theme,
+      };
+      await updateProfileDoc(user.uid, safeUpdates);
+      setProfile((prev) => (prev ? { ...prev, ...safeUpdates } : null));
     } catch (err: any) {
       console.error('Profile update failed:', err);
       throw err;
@@ -176,12 +185,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         organization,
         currentMember,
+        actualRole,
         userRole,
+        isSimulatingRole,
+        simulatedRole,
         loading,
         authError,
         signInWithGoogle,
         signOutUser,
         switchRole,
+        clearRoleSimulation,
         updateProfileData,
         canPerform,
       }}

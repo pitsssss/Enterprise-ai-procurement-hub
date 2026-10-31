@@ -222,7 +222,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                     <span className="font-mono text-xs font-semibold text-[#173E38] dark:text-[#4EA89A]" dir="ltr">
                       {rfq.rfqNumber}
                     </span>
-                    <Badge variant="default" size="sm">{rfq.category}</Badge>
+                    <Badge variant="default" size="sm">{t(`categories.${rfq.category}`, { defaultValue: rfq.category })}</Badge>
                     <Badge
                       variant={rfq.status === 'EVALUATION' ? 'accent' : 'primary'}
                       size="sm"
@@ -234,7 +234,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                     {rfq.title}
                   </p>
                   <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                    {rfq.department} • {t('rfq.colDeadline')}: <span dir="ltr">{rfq.deadline}</span> • {rfq.lineItems.length} SKUs
+                    {rfq.department} • {t('rfq.colDeadline')}: <span dir="ltr">{rfq.deadline}</span> • {rfq.lineItems.length} {isArabic ? 'بنود' : 'SKUs'}
                   </p>
                 </div>
 

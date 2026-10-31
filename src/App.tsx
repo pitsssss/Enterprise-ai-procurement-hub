@@ -55,7 +55,17 @@ import { Badge } from './components/ui/Badge';
 export default function App() {
   const { t, i18n } = useTranslation();
   const isArabic = i18n.language === 'ar';
-  const { user, profile, organization, userRole, loading: authLoading, canPerform } = useAuth();
+  const {
+    user,
+    profile,
+    organization,
+    actualRole,
+    userRole,
+    isSimulatingRole,
+    clearRoleSimulation,
+    loading: authLoading,
+    canPerform,
+  } = useAuth();
 
   // Public vs Workspace View Mode
   const [viewMode, setViewMode] = useState<'workspace' | 'public'>('workspace');
@@ -148,17 +158,40 @@ export default function App() {
       id: 'm-1',
       sender: 'assistant',
       timestamp: '09:15 AM',
-      content:
-        'Welcome to Synthetix Sourcing. Real-time Firestore workspace active with SOX Section 404 dual-signoff policies and immutable audit tracking.',
+      content: t('copilot.initialWelcome'),
       mode: 'SIMULATED_PRESET',
       citations: ['[SOX-Sec-404]', '[FAR-52.204-24]'],
       suggestedAction: {
-        label: 'Inspect Flagged PO Exceptions',
+        label: t('copilot.actionInspectFlagged'),
         actionType: 'NAVIGATE_TAB',
         payload: 'pos',
       },
     },
   ]);
+
+  // Sync initial welcome message if user toggles language before chatting
+  useEffect(() => {
+    setChatMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === 'm-1') {
+        return [
+          {
+            id: 'm-1',
+            sender: 'assistant',
+            timestamp: '09:15 AM',
+            content: t('copilot.initialWelcome'),
+            mode: 'SIMULATED_PRESET',
+            citations: ['[SOX-Sec-404]', '[FAR-52.204-24]'],
+            suggestedAction: {
+              label: t('copilot.actionInspectFlagged'),
+              actionType: 'NAVIGATE_TAB',
+              payload: 'pos',
+            },
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [i18n.language, t]);
 
   const showToast = (title: string, desc: string, type: 'success' | 'info' | 'warn' = 'success') => {
     setToastMessage({ title, desc, type });
@@ -302,7 +335,11 @@ export default function App() {
   // PO Action Handlers
   const handleApprovePo = async (poId: string) => {
     if (!canPerform('APPROVE_PO')) {
-      showToast('Insufficient Permissions', `Role ${userRole} is not authorized to sign off purchase orders.`, 'warn');
+      showToast(
+        t('toasts.permissionsDeniedTitle'),
+        t('toasts.permissionsDeniedDesc', { role: userRole }),
+        'warn'
+      );
       return;
     }
 
@@ -320,9 +357,12 @@ export default function App() {
           role: userRole,
         }
       );
-      showToast('Dual Sign-Off Executed', `${targetPo.poNumber} approved and synchronized to SAP S/4HANA.`);
+      showToast(
+        t('toasts.dualSignoffTitle'),
+        t('toasts.dualSignoffDesc', { poNumber: targetPo.poNumber })
+      );
     } catch (err: any) {
-      showToast('Approval Failed', err.message, 'warn');
+      showToast(t('toasts.approvalFailedTitle'), err.message, 'warn');
     }
   };
 
@@ -347,9 +387,12 @@ export default function App() {
           role: userRole,
         }
       );
-      showToast('SOX Exception Cleared', `Form CS-8 Sole-Source waiver authorized for ${po.poNumber}.`);
+      showToast(
+        t('toasts.soxClearedTitle'),
+        t('toasts.soxClearedDesc', { poNumber: po.poNumber })
+      );
     } catch (err: any) {
-      showToast('Waiver Failed', err.message, 'warn');
+      showToast(t('toasts.waiverFailedTitle'), err.message, 'warn');
     }
   };
 
@@ -357,7 +400,11 @@ export default function App() {
   const handleAwardBid = async (bid: VendorBid) => {
     if (!activeRfq) return;
     if (!canPerform('AWARD_BID')) {
-      showToast('Permission Denied', `Role ${userRole} cannot award supplier bids.`, 'warn');
+      showToast(
+        t('toasts.permissionsDeniedTitle'),
+        t('toasts.permissionsDeniedDesc', { role: userRole }),
+        'warn'
+      );
       return;
     }
 
@@ -376,14 +423,19 @@ export default function App() {
       setIsAwardModalOpen(false);
       setSelectedBidForAward(null);
 
+      const holdSuffix = newPo.status === 'FLAGGED' ? t('toasts.awardHoldSuffix') : '';
       showToast(
-        'Contract Award Finalized',
-        `${bid.vendorName} awarded. ${newPo.poNumber} generated ${newPo.status === 'FLAGGED' ? '(SOX Hold applied)' : ''}.`
+        t('toasts.awardFinalizedTitle'),
+        t('toasts.awardFinalizedDesc', {
+          vendorName: bid.vendorName,
+          poNumber: newPo.poNumber,
+          holdSuffix,
+        })
       );
 
       setActiveTab('pos');
     } catch (err: any) {
-      showToast('Award Failed', err.message, 'warn');
+      showToast(t('toasts.awardFailedTitle'), err.message, 'warn');
     }
   };
 
@@ -393,7 +445,11 @@ export default function App() {
     if (!newRfqTitle.trim()) return;
 
     if (!canPerform('CREATE_RFQ')) {
-      showToast('Permission Denied', `Role ${userRole} cannot create RFQs.`, 'warn');
+      showToast(
+        t('toasts.permissionsDeniedTitle'),
+        t('toasts.permissionsDeniedDesc', { role: userRole }),
+        'warn'
+      );
       return;
     }
 
@@ -434,10 +490,13 @@ export default function App() {
 
       setIsCreateRfqModalOpen(false);
       setNewRfqTitle('');
-      showToast('Requisition Published', `${rfqNum} is now persistent in the organization database.`);
+      showToast(
+        t('toasts.reqPublishedTitle'),
+        t('toasts.reqPublishedDesc', { rfqNumber: rfqNum })
+      );
       setActiveTab('rfqs');
     } catch (err: any) {
-      showToast('Requisition Creation Failed', err.message, 'warn');
+      showToast(t('toasts.reqFailedTitle'), err.message, 'warn');
     }
   };
 
@@ -607,6 +666,28 @@ export default function App() {
               <p className="font-bold text-[#17272A] dark:text-[#EBF1F0] text-xs sm:text-sm">{toastMessage.title}</p>
               <p className="text-[#647A7B] dark:text-[#8BA39F] mt-0.5 text-[11px] sm:text-xs leading-relaxed">{toastMessage.desc}</p>
             </div>
+          </div>
+        )}
+
+        {/* Role Preview Warning Banner */}
+        {isSimulatingRole && (
+          <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/50 px-4 py-2 text-xs flex items-center justify-between gap-3 text-amber-900 dark:text-amber-200">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-[10px] uppercase bg-amber-200 dark:bg-amber-900 px-1.5 py-0.5 rounded text-amber-900 dark:text-amber-100">
+                {isArabic ? 'معاينة محاكاة' : 'UI Preview Mode'}
+              </span>
+              <span>
+                {isArabic
+                  ? `أنت تشاهد واجهة المستخدم بدور: ${t(`roles.${userRole}`, userRole)}. صلاحياتك الحقيقية (${t(`roles.${actualRole}`, actualRole)}) محمية بقواعد أمان Firestore.`
+                  : `Previewing UI as ${userRole}. Persistent authorization (${actualRole}) is strictly enforced by Firestore security rules.`}
+              </span>
+            </div>
+            <button
+              onClick={clearRoleSimulation}
+              className="text-xs font-semibold underline hover:no-underline text-amber-950 dark:text-amber-100 shrink-0"
+            >
+              {isArabic ? 'إلغاء المعاينة' : 'Exit Preview'}
+            </button>
           </div>
         )}
 

@@ -338,14 +338,16 @@ export const OrganizationSettingsView: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                  {isArabic ? 'سجل التدقيق المالي الثابت' : 'Immutable Procurement Audit Trail'}
+                  {isArabic ? 'سجل التدقيق المالي المتسلسل (إضافة فقط)' : 'Append-Only Procurement Audit Trail'}
                 </h2>
-                <Badge variant="success" size="sm">
-                  {isArabic ? 'متوافق مع SOX 404' : 'SOX SEC 404 Compliant'}
+                <Badge variant="primary" size="sm">
+                  {isArabic ? 'إطار ضوابط SOX 404' : 'SOX 404 Control Framework'}
                 </Badge>
               </div>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                {isArabic ? 'سجل أحداث غير قابل للتعديل وموثق تشفيرياً للمدققين الداخليين والخارجيين.' : 'Cryptographically verifiable, append-only event ledger for internal and external auditors.'}
+                {isArabic
+                  ? 'سجل أحداث متسلسل غير قابل للتعديل يوثق هوية المنفذ بدقة لدعم جاهزية التدقيق الداخلي والخارجي.'
+                  : 'Append-only activity log with verified actor attribution to assist internal and external audit readiness.'}
               </p>
             </div>
           </div>
@@ -418,15 +420,15 @@ export const OrganizationSettingsView: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                {isArabic ? 'موصلات أنظمة ERP والأنظمة المالية النشطة' : 'Active ERP & Financial Connectors'}
+                {isArabic ? 'بوابات أنظمة ERP والأنظمة المالية (محاكاة)' : 'Simulated ERP & Financial Gateways'}
               </h2>
               <p className="text-xs text-[#647A7B] dark:text-[#8BA39F]">
-                {isArabic ? 'حالة المزامنة ثنائية الاتجاه مع السجلات المركزية للشركة.' : 'Bidirectional synchronization status with corporate systems of record.'}
+                {isArabic ? 'حالة المزامنة التجريبية المحاكاة مع سجلات دفتر الأستاذ المركزي.' : 'Simulated bidirectional synchronization status with corporate general ledgers.'}
               </p>
             </div>
           </div>
-          <Badge variant="success" size="sm" dot>
-            {isArabic ? 'نظامان متصلان مباشرة' : '2 Systems Live'}
+          <Badge variant="warning" size="sm" dot>
+            {isArabic ? 'بوابتان تجريبيتان (محاكاة)' : '2 Simulated Gateways'}
           </Badge>
         </div>
 
@@ -439,15 +441,15 @@ export const OrganizationSettingsView: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs sm:text-sm font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                  SAP S/4HANA Cloud (Procurement Core)
+                  SAP S/4HANA Cloud (Procurement Core - Simulated)
                 </p>
                 <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                  <bdi dir="ltr">Endpoint: https://sap-prd.corp.internal/sap/opu/odata/ • Live</bdi>
+                  <bdi dir="ltr">Gateway: Mock OData Dispatcher • Sandbox Simulation</bdi>
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="success" size="sm">{isArabic ? 'متصل' : 'Connected'}</Badge>
+              <Badge variant="warning" size="sm">{isArabic ? 'محاكاة' : 'Simulated'}</Badge>
               <Button variant="ghost" size="sm" leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
                 Ping
               </Button>
@@ -462,15 +464,15 @@ export const OrganizationSettingsView: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs sm:text-sm font-semibold text-[#17272A] dark:text-[#EBF1F0]">
-                  Workday Financial Management (General Ledger)
+                  Workday Financial Management (General Ledger - Simulated)
                 </p>
                 <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F]">
-                  {isArabic ? 'مزامنة تخصيصات مراكز التكلفة والتسلسل الهرمي للاعتماد الثنائي.' : 'Syncs cost center allocations and dual-authorization approval hierarchies.'}
+                  {isArabic ? 'محاكاة مزامنة تخصيصات مراكز التكلفة والتسلسل الهرمي للاعتماد الثنائي.' : 'Simulated cost center allocations and dual-authorization hierarchy sync.'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="success" size="sm">{isArabic ? 'متصل' : 'Connected'}</Badge>
+              <Badge variant="warning" size="sm">{isArabic ? 'محاكاة' : 'Simulated'}</Badge>
               <Button variant="ghost" size="sm" leftIcon={<RefreshCw className="h-3.5 w-3.5" />}>
                 Ping
               </Button>

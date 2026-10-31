@@ -138,7 +138,7 @@ export const RfqsView: React.FC<RfqsViewProps> = ({
                     </div>
                   </td>
                   <td className="py-3.5 px-4">
-                    <Badge variant="default" size="sm">{rfq.category}</Badge>
+                    <Badge variant="default" size="sm">{t(`categories.${rfq.category}`, { defaultValue: rfq.category })}</Badge>
                     <p className="text-[11px] text-[#647A7B] dark:text-[#8BA39F] mt-1">
                       {rfq.department}
                     </p>
@@ -269,7 +269,7 @@ export const RfqsView: React.FC<RfqsViewProps> = ({
                     <span className="font-mono text-xs font-bold text-[#173E38] dark:text-[#4EA89A]" dir="ltr">
                       {rfq.rfqNumber}
                     </span>
-                    <Badge variant="default" size="sm">{rfq.category}</Badge>
+                    <Badge variant="default" size="sm">{t(`categories.${rfq.category}`, { defaultValue: rfq.category })}</Badge>
                   </div>
                   <h3 className="mt-1 font-semibold text-xs text-[#17272A] dark:text-[#EBF1F0]">
                     {rfq.title}

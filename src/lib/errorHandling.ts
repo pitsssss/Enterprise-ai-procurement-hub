@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+
 /**
  * Standard Firestore error handling helper per Firebase Integration Skill
  */
@@ -20,20 +22,36 @@ export function handleFirestoreError(error: unknown, context: FirestoreErrorCont
     context,
   });
 
-  let userFriendlyMessage = 'An error occurred while saving your changes. Please retry.';
+  let userFriendlyMessage = i18n.t('errors.generic', { defaultValue: 'An error occurred while saving your changes. Please retry.' });
 
   if (errorCode === 'permission-denied') {
-    userFriendlyMessage = `Access Denied: You do not have sufficient permissions to ${context.action} this ${context.entityType}. Verify your organization role.`;
+    userFriendlyMessage = i18n.t('errors.permissionDenied', {
+      action: context.action,
+      entityType: context.entityType,
+      defaultValue: `Access Denied: You do not have sufficient permissions to ${context.action} this ${context.entityType}. Verify your organization role.`
+    });
   } else if (errorCode === 'not-found') {
-    userFriendlyMessage = `The requested ${context.entityType} could not be found. It may have been removed.`;
+    userFriendlyMessage = i18n.t('errors.notFound', {
+      entityType: context.entityType,
+      defaultValue: `The requested ${context.entityType} could not be found. It may have been removed.`
+    });
   } else if (errorCode === 'already-exists') {
-    userFriendlyMessage = `A ${context.entityType} with this identifier already exists in your workspace.`;
+    userFriendlyMessage = i18n.t('errors.alreadyExists', {
+      entityType: context.entityType,
+      defaultValue: `A ${context.entityType} with this identifier already exists in your workspace.`
+    });
   } else if (errorCode === 'resource-exhausted') {
-    userFriendlyMessage = `Database request limit reached. Please wait a moment and try again.`;
+    userFriendlyMessage = i18n.t('errors.resourceExhausted', {
+      defaultValue: `Database request limit reached. Please wait a moment and try again.`
+    });
   } else if (errorCode === 'failed-precondition') {
-    userFriendlyMessage = `Operation aborted: The procurement record is in a state that cannot be modified under SOX policies.`;
+    userFriendlyMessage = i18n.t('errors.failedPrecondition', {
+      defaultValue: `Operation aborted: The procurement record is in a state that cannot be modified under SOX policies.`
+    });
   } else if (errorCode === 'unauthenticated') {
-    userFriendlyMessage = `Your session has expired. Please sign in again with your enterprise account.`;
+    userFriendlyMessage = i18n.t('errors.unauthenticated', {
+      defaultValue: `Your session has expired. Please sign in again with your enterprise account.`
+    });
   }
 
   const customError = new Error(userFriendlyMessage);

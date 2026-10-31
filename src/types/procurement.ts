@@ -85,11 +85,24 @@ export interface PurchaseOrder {
   complianceWarning?: string;
   complianceCleared?: boolean;
   soxHold?: boolean;
+  createdBy?: string;
+  createdByEmail?: string;
   waiverSignedBy?: string;
   waiverSignedAt?: string;
   waiverJustification?: string;
   approvedBy?: string;
   approvedAt?: string;
+}
+
+export interface OrganizationInvitation {
+  id: string;
+  orgId: string;
+  email: string;
+  role: UserRole;
+  department: string;
+  invitedBy: string;
+  invitedAt: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REVOKED';
 }
 
 export interface Organization {

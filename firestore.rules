@@ -15,8 +15,12 @@ service cloud.firestore {
       return isAuth() && exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
     }
 
+    function getMemberData(orgId) {
+      return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data;
+    }
+
     function getMemberRole(orgId) {
-      return get(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)).data.role;
+      return getMemberData(orgId).role;
     }
 
     function hasAnyRole(orgId, roles) {
@@ -43,10 +47,30 @@ service cloud.firestore {
       return hasAnyRole(orgId, ['ADMIN', 'FINANCE']);
     }
 
+    function isAuditor(orgId) {
+      return hasAnyRole(orgId, ['AUDITOR']);
+    }
+
+    function isOrgOwner(orgId) {
+      return isAuth() && get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerUid == request.auth.uid;
+    }
+
     // User Profiles
+    // Note: User profiles hold preferences and personal metadata. Permissions are strictly derived from organizations/{orgId}/members.
     match /userProfiles/{userId} {
       allow read: if isAuth();
       allow write: if isUser(userId);
+    }
+
+    // User Invitations: Secure Tenant Onboarding Directory
+    match /userInvitations/{email} {
+      allow read: if isAuth() && (request.auth.token.email == email || (resource != null && isMember(resource.data.orgId)));
+      allow create: if isAuth() && isMember(request.resource.data.orgId) && isAdmin(request.resource.data.orgId);
+      allow update: if isAuth() && (
+        (request.auth.token.email == email) ||
+        (resource != null && isMember(resource.data.orgId) && isAdmin(resource.data.orgId))
+      );
+      allow delete: if false;
     }
 
     // Organizations
@@ -54,19 +78,43 @@ service cloud.firestore {
       allow read: if isMember(orgId) || (isAuth() && request.auth.uid == resource.data.ownerUid);
       allow create: if isAuth() && request.resource.data.ownerUid == request.auth.uid;
       allow update: if isAdmin(orgId);
-      allow delete: if isAdmin(orgId);
+      allow delete: if isOrgOwner(orgId);
 
-      // Organization Members
+      // Organization Members: RBAC & Tenant Isolation
       match /members/{memberId} {
         allow read: if isMember(orgId) || isUser(memberId);
-        allow create: if isAuth() && (isAdmin(orgId) || request.auth.uid == memberId);
-        allow update, delete: if isAdmin(orgId);
+
+        // Member creation allowed ONLY if:
+        // 1. Existing org admin adds a member
+        // 2. The organization owner creates their initial member record
+        // 3. User is joining via an active authorized invitation addressed to their verified auth email
+        allow create: if isAuth() && (
+          isAdmin(orgId) ||
+          (request.auth.uid == memberId && (
+            (get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerUid == request.auth.uid) ||
+            (exists(/databases/$(database)/documents/organizations/$(orgId)/invitations/$(request.auth.token.email)) &&
+             request.resource.data.role == get(/databases/$(database)/documents/organizations/$(orgId)/invitations/$(request.auth.token.email)).data.role)
+          ))
+        );
+
+        // Role modification allowed ONLY by admin, and users CANNOT change their own role (prevents self-promotion)
+        allow update: if isAuth() && isAdmin(orgId) && (request.auth.uid != memberId);
+
+        // Member deletion allowed ONLY by admin, and cannot delete the org owner or themselves
+        allow delete: if isAuth() && isAdmin(orgId) && (request.auth.uid != memberId) &&
+          (memberId != get(/databases/$(database)/documents/organizations/$(orgId)).data.ownerUid);
+      }
+
+      // Member Invitations
+      match /invitations/{inviteId} {
+        allow read: if isMember(orgId) || (isAuth() && request.auth.token.email == resource.data.email);
+        allow create, update, delete: if isAdmin(orgId);
       }
 
       // RFQs
       match /rfqs/{rfqId} {
         allow read: if isMember(orgId);
-        allow create: if isBuyer(orgId);
+        allow create: if isBuyer(orgId) && request.resource.data.createdBy == request.auth.uid;
         allow update: if isBuyer(orgId);
         allow delete: if isAdmin(orgId);
       }
@@ -74,7 +122,7 @@ service cloud.firestore {
       // Vendors
       match /vendors/{vendorId} {
         allow read: if isMember(orgId);
-        allow create, update: if isProcurementManager(orgId) || isBuyer(orgId);
+        allow create, update: if isBuyer(orgId);
         allow delete: if isAdmin(orgId);
       }
 
@@ -85,19 +133,53 @@ service cloud.firestore {
         allow delete: if isAdmin(orgId);
       }
 
-      // Purchase Orders
+      // Purchase Orders: Governance, Separation of Duties, & Thresholds
       match /pos/{poId} {
         allow read: if isMember(orgId);
         allow create: if isBuyer(orgId);
-        allow update: if isMember(orgId);
+
+        // Update permissions enforce separation of duties & role authorization:
+        allow update: if isMember(orgId) && (
+          // Admin can manage POs
+          isAdmin(orgId) ||
+
+          // Approvers / Finance approving a pending PO:
+          // 1. Must be an authorized approver
+          // 2. Separation of duties: Creator/Buyer cannot approve their own PO (self-approval prevention)
+          // 3. If PO was flagged for policy review / SOX hold, cannot approve without waiver sign-off
+          (
+            request.resource.data.status == 'APPROVED' &&
+            resource.data.status != 'APPROVED' &&
+            (
+              // If waiver required / single-source policy threshold:
+              (resource.data.soxHold == true && isFinance(orgId)) ||
+              // If standard approval:
+              (resource.data.soxHold != true && isApprover(orgId))
+            ) &&
+            // Separation of duties: Cannot self-approve
+            (resource.data.createdBy != request.auth.uid) &&
+            (resource.data.createdByEmail != request.auth.token.email) &&
+            // Dual sign-off: Final approver cannot be the exact same person who authorized the waiver
+            (resource.data.waiverSignedBy == null || resource.data.waiverSignedBy != request.auth.token.email)
+          ) ||
+
+          // Signing Form CS-8 Sole-Source waiver:
+          (
+            isFinance(orgId) &&
+            request.resource.data.waiverSignedBy == request.auth.token.email
+          )
+        );
+
         allow delete: if isAdmin(orgId);
       }
 
-      // Audit Events - STRICTLY IMMUTABLE & APPEND-ONLY
+      // Audit Events - APPEND-ONLY WITH VERIFIED ACTOR ATTRIBUTION
       match /auditEvents/{eventId} {
         allow read: if isMember(orgId);
-        allow create: if isMember(orgId);
-        allow update, delete: if false;
+        allow create: if isMember(orgId) &&
+          request.resource.data.actorId == request.auth.uid &&
+          (request.auth.token.email == null || request.resource.data.actorEmail == request.auth.token.email);
+        allow update, delete: if false; // Append-only, cannot be modified or deleted
       }
 
       // Notifications

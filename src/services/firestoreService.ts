@@ -27,7 +27,7 @@ import {
 } from '../types/procurement';
 import { INITIAL_RFQS, INITIAL_BIDS, INITIAL_VENDORS, INITIAL_POS } from '../data/mockData';
 
-// User Profile Operations
+// User Profile & Tenant Isolation Operations
 export async function getOrCreateUserProfile(user: {
   uid: string;
   email: string | null;
@@ -37,58 +37,113 @@ export async function getOrCreateUserProfile(user: {
   try {
     const userRef = doc(db, 'userProfiles', user.uid);
     const userSnap = await getDoc(userRef);
+    const userEmail = (user.email || '').toLowerCase().trim();
 
+    // 1. Existing user with established profile
     if (userSnap.exists()) {
       const profile = userSnap.data() as UserProfile;
       const orgRef = doc(db, 'organizations', profile.currentOrgId);
       const orgSnap = await getDoc(orgRef);
-      const organization = orgSnap.exists()
-        ? (orgSnap.data() as Organization)
-        : await createDefaultOrganization(user.uid, user.email || 'user@synthetix.corp');
 
-      const memberRef = doc(db, 'organizations', organization.id, 'members', user.uid);
-      const memberSnap = await getDoc(memberRef);
-      let member: OrganizationMember;
-      if (memberSnap.exists()) {
-        member = memberSnap.data() as OrganizationMember;
-      } else {
-        member = {
-          uid: user.uid,
-          orgId: organization.id,
-          email: user.email || '',
-          displayName: user.displayName || user.email?.split('@')[0] || 'Procurement Specialist',
-          role: 'ADMIN',
-          department: 'Executive Sourcing',
-          joinedAt: new Date().toISOString(),
-        };
-        await setDoc(memberRef, member);
+      if (orgSnap.exists()) {
+        const organization = orgSnap.data() as Organization;
+        const memberRef = doc(db, 'organizations', organization.id, 'members', user.uid);
+        const memberSnap = await getDoc(memberRef);
+
+        if (memberSnap.exists()) {
+          const member = memberSnap.data() as OrganizationMember;
+          return { profile, organization, member };
+        }
       }
-
-      return { profile, organization, member };
     }
 
-    // New User Setup
-    const defaultOrgId = 'org-synthetix-enterprise';
-    const organization = await getOrCreateDefaultOrg(defaultOrgId, user.uid);
+    // 2. Check for an authorized pending invitation matching the user's email
+    let claimedOrg: Organization | null = null;
+    let claimedMember: OrganizationMember | null = null;
+
+    if (userEmail) {
+      const inviteRef = doc(db, 'userInvitations', userEmail);
+      const inviteSnap = await getDoc(inviteRef);
+
+      if (inviteSnap.exists()) {
+        const inviteData = inviteSnap.data();
+        if (inviteData.status === 'PENDING' && inviteData.orgId) {
+          const invitedOrgRef = doc(db, 'organizations', inviteData.orgId);
+          const invitedOrgSnap = await getDoc(invitedOrgRef);
+
+          if (invitedOrgSnap.exists()) {
+            claimedOrg = invitedOrgSnap.data() as Organization;
+            claimedMember = {
+              uid: user.uid,
+              orgId: claimedOrg.id,
+              email: user.email || '',
+              displayName: user.displayName || userEmail.split('@')[0] || 'Enterprise Specialist',
+              role: inviteData.role || 'BUYER',
+              department: inviteData.department || 'Procurement Operations',
+              joinedAt: new Date().toISOString(),
+            };
+
+            // Write member record to the invited organization
+            await setDoc(doc(db, 'organizations', claimedOrg.id, 'members', user.uid), claimedMember);
+
+            // Mark invitation accepted in directory
+            await updateDoc(inviteRef, {
+              status: 'ACCEPTED',
+              acceptedByUid: user.uid,
+              acceptedAt: new Date().toISOString(),
+            });
+
+            try {
+              await updateDoc(doc(db, 'organizations', claimedOrg.id, 'invitations', userEmail), {
+                status: 'ACCEPTED',
+                acceptedByUid: user.uid,
+              });
+            } catch (_) {}
+          }
+        }
+      }
+    }
+
+    if (claimedOrg && claimedMember) {
+      const profile: UserProfile = {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || userEmail.split('@')[0] || 'Enterprise Specialist',
+        photoURL: user.photoURL || undefined,
+        currentOrgId: claimedOrg.id,
+        language: 'en',
+        theme: 'light',
+        department: claimedMember.department,
+        title: 'Procurement Specialist',
+        updatedAt: new Date().toISOString(),
+      };
+      await setDoc(userRef, profile);
+      return { profile, organization: claimedOrg, member: claimedMember };
+    }
+
+    // 3. New user without invitation: Securely provision an isolated personal organization
+    // Automatic ADMIN role is strictly confined to their own newly created organization
+    const personalOrgId = `org-${user.uid.slice(0, 12)}`;
+    const organization = await getOrCreatePersonalOrg(personalOrgId, user.uid, user.displayName, user.email);
 
     const member: OrganizationMember = {
       uid: user.uid,
-      orgId: defaultOrgId,
+      orgId: personalOrgId,
       email: user.email || '',
-      displayName: user.displayName || user.email?.split('@')[0] || 'Enterprise Lead',
+      displayName: user.displayName || userEmail.split('@')[0] || 'Enterprise Lead',
       role: 'ADMIN',
       department: 'Global Sourcing & Supply Chain',
       joinedAt: new Date().toISOString(),
     };
 
-    await setDoc(doc(db, 'organizations', defaultOrgId, 'members', user.uid), member);
+    await setDoc(doc(db, 'organizations', personalOrgId, 'members', user.uid), member);
 
     const profile: UserProfile = {
       uid: user.uid,
       email: user.email || '',
-      displayName: user.displayName || user.email?.split('@')[0] || 'Enterprise Lead',
+      displayName: user.displayName || userEmail.split('@')[0] || 'Enterprise Lead',
       photoURL: user.photoURL || undefined,
-      currentOrgId: defaultOrgId,
+      currentOrgId: personalOrgId,
       language: 'en',
       theme: 'light',
       title: 'VP of Strategic Procurement',
@@ -108,7 +163,12 @@ export async function getOrCreateUserProfile(user: {
   }
 }
 
-async function getOrCreateDefaultOrg(orgId: string, ownerUid: string): Promise<Organization> {
+async function getOrCreatePersonalOrg(
+  orgId: string,
+  ownerUid: string,
+  displayName: string | null,
+  email: string | null
+): Promise<Organization> {
   const orgRef = doc(db, 'organizations', orgId);
   const orgSnap = await getDoc(orgRef);
 
@@ -116,10 +176,16 @@ async function getOrCreateDefaultOrg(orgId: string, ownerUid: string): Promise<O
     return orgSnap.data() as Organization;
   }
 
-  const defaultOrg: Organization = {
+  const orgName = displayName
+    ? `${displayName}'s Enterprise Sourcing`
+    : email
+    ? `${email.split('@')[0].toUpperCase()} Global Procurement`
+    : 'Synthetix Strategic Operations';
+
+  const newOrg: Organization = {
     id: orgId,
-    name: 'Synthetix Global Procurement Corp',
-    slug: 'synthetix-global',
+    name: orgName,
+    slug: `tenant-${ownerUid.slice(0, 8)}`,
     defaultCurrency: 'USD',
     soxComplianceEnabled: true,
     soxThresholdUSD: 250000,
@@ -127,30 +193,10 @@ async function getOrCreateDefaultOrg(orgId: string, ownerUid: string): Promise<O
     ownerUid: ownerUid,
   };
 
-  await setDoc(orgRef, defaultOrg);
-
-  // Seed default dataset for this organization
+  await setDoc(orgRef, newOrg);
   await seedInitialOrganizationData(orgId, ownerUid);
 
-  return defaultOrg;
-}
-
-async function createDefaultOrganization(ownerUid: string, email: string): Promise<Organization> {
-  const orgId = `org-${Date.now().toString(36)}`;
-  const defaultOrg: Organization = {
-    id: orgId,
-    name: 'Synthetix Strategic Operations',
-    slug: 'synthetix-ops',
-    defaultCurrency: 'USD',
-    soxComplianceEnabled: true,
-    soxThresholdUSD: 250000,
-    createdAt: new Date().toISOString(),
-    ownerUid: ownerUid,
-  };
-
-  await setDoc(doc(db, 'organizations', orgId), defaultOrg);
-  await seedInitialOrganizationData(orgId, ownerUid);
-  return defaultOrg;
+  return newOrg;
 }
 
 export async function updateUserProfile(uid: string, updates: Partial<UserProfile>): Promise<void> {
@@ -436,10 +482,12 @@ export async function awardRfqBid(
       approverRole: isSoxFlagged ? 'VP of Finance (Dual SOX Sign-off)' : 'Procurement Director',
       paymentTerms: 'Net 45 Enterprise',
       complianceWarning: isSoxFlagged
-        ? 'SOX Sec 404: Exceeds $250k single-source delegation limit. Requires Form CS-8 waiver.'
+        ? 'Internal Fiduciary Alert: Exceeds $250k single-source delegation limit. Requires Form CS-8 waiver.'
         : undefined,
       complianceCleared: !isSoxFlagged,
       soxHold: isSoxFlagged,
+      createdBy: actor.uid,
+      createdByEmail: actor.email,
     };
 
     const poRef = doc(db, 'organizations', orgId, 'pos', poId);
@@ -447,7 +495,7 @@ export async function awardRfqBid(
 
     await batch.commit();
 
-    // 3. Log Audit Trail
+    // 3. Log Audit Trail with Verified Actor
     await logAuditEvent(orgId, {
       actorId: actor.uid,
       actorEmail: actor.email,
@@ -472,6 +520,36 @@ export async function approvePurchaseOrder(
 ): Promise<void> {
   try {
     const poRef = doc(db, 'organizations', orgId, 'pos', poId);
+    const poSnap = await getDoc(poRef);
+    if (!poSnap.exists()) {
+      throw new Error(`Purchase Order ${poNumber} does not exist.`);
+    }
+    const poData = poSnap.data() as PurchaseOrder;
+
+    // 1. Separation of Duties: Prevent self-approval
+    if (
+      poData.createdBy === actor.uid ||
+      (poData.createdByEmail && poData.createdByEmail.toLowerCase() === actor.email.toLowerCase())
+    ) {
+      throw new Error(
+        'Separation of Duties Violation: Fiduciary policy prevents buyers or requisition creators from self-approving purchase orders.'
+      );
+    }
+
+    // 2. Dual Sign-Off Requirement: Approver cannot be the same person who authorized the Form CS-8 waiver
+    if (poData.waiverSignedBy && poData.waiverSignedBy.toLowerCase() === actor.email.toLowerCase()) {
+      throw new Error(
+        'Dual Sign-Off Requirement: Secondary PO approver must be distinct from the Form CS-8 waiver signatory.'
+      );
+    }
+
+    // 3. SOX / Policy Hold Verification
+    if (poData.soxHold && !poData.waiverSignedBy) {
+      throw new Error(
+        `Policy Hold: Order ${poNumber} exceeds single-source threshold. Form CS-8 waiver must be authorized before final approval.`
+      );
+    }
+
     const now = new Date().toISOString();
 
     await updateDoc(poRef, {
@@ -503,18 +581,32 @@ export async function resolveSoxWaiver(
 ): Promise<void> {
   try {
     const poRef = doc(db, 'organizations', orgId, 'pos', poId);
+    const poSnap = await getDoc(poRef);
+    if (!poSnap.exists()) {
+      throw new Error(`Purchase Order ${poNumber} does not exist.`);
+    }
+    const poData = poSnap.data() as PurchaseOrder;
+
+    // Separation of Duties: Creator cannot authorize sole-source waiver for their own requisition
+    if (
+      poData.createdBy === actor.uid ||
+      (poData.createdByEmail && poData.createdByEmail.toLowerCase() === actor.email.toLowerCase())
+    ) {
+      throw new Error(
+        'Separation of Duties Violation: Requisition creator cannot authorize Form CS-8 waiver for their own requisition.'
+      );
+    }
+
     const now = new Date().toISOString();
 
     await updateDoc(poRef, {
-      status: 'APPROVED',
+      status: 'PENDING_APPROVAL', // Release hold, ready for distinct secondary executive approver
       soxHold: false,
       complianceCleared: true,
-      complianceWarning: 'Form CS-8 Sole-Source Waiver Authorized by Finance Audit Committee',
+      complianceWarning: 'Form CS-8 Sole-Source Waiver Authorized (Awaiting Distinct Secondary PO Sign-off)',
       waiverSignedBy: actor.email,
       waiverSignedAt: now,
       waiverJustification: justification,
-      approvedBy: actor.email,
-      approvedAt: now,
     });
 
     await logAuditEvent(orgId, {
@@ -524,7 +616,7 @@ export async function resolveSoxWaiver(
       action: 'SOX_WAIVER_AUTHORIZED',
       entityType: 'PURCHASE_ORDER',
       entityId: poId,
-      summary: `Form CS-8 Sole-Source Waiver signed for ${poNumber} by ${actor.email}. Reason: ${justification}`,
+      summary: `Form CS-8 Sole-Source Waiver authorized for ${poNumber} by ${actor.email}. Pending distinct secondary sign-off. Reason: ${justification}`,
     });
   } catch (err) {
     throw handleFirestoreError(err, { action: 'update', entityType: 'PurchaseOrder', entityId: poId, orgId });
@@ -569,6 +661,11 @@ export async function updateOrganizationMemberRole(
   newRole: UserRole,
   actor: { uid: string; email: string; role: UserRole }
 ): Promise<void> {
+  // Privilege Escalation Prevention: Users cannot alter their own authorization level
+  if (targetUid === actor.uid) {
+    throw new Error('Privilege Escalation Blocked: Signatories cannot modify their own authorization level.');
+  }
+
   try {
     const memberRef = doc(db, 'organizations', orgId, 'members', targetUid);
     await updateDoc(memberRef, { role: newRole });
@@ -595,18 +692,25 @@ export async function inviteOrganizationMember(
   actor: { uid: string; email: string; role: UserRole }
 ): Promise<void> {
   try {
-    const pseudoUid = `invited-${inviteEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
-    const memberDoc = doc(db, 'organizations', orgId, 'members', pseudoUid);
-
-    await setDoc(memberDoc, {
-      uid: pseudoUid,
+    const cleanEmail = inviteEmail.toLowerCase().trim();
+    const inviteData = {
+      id: cleanEmail,
       orgId,
-      email: inviteEmail,
-      displayName: inviteEmail.split('@')[0],
+      email: cleanEmail,
       role,
       department,
-      joinedAt: new Date().toISOString(),
-    });
+      invitedBy: actor.email,
+      invitedAt: new Date().toISOString(),
+      status: 'PENDING' as const,
+    };
+
+    // 1. Store in organization invitations subcollection
+    const orgInviteDoc = doc(db, 'organizations', orgId, 'invitations', cleanEmail);
+    await setDoc(orgInviteDoc, inviteData);
+
+    // 2. Store in userInvitations registry for tenant claiming
+    const userInviteDoc = doc(db, 'userInvitations', cleanEmail);
+    await setDoc(userInviteDoc, inviteData);
 
     await logAuditEvent(orgId, {
       actorId: actor.uid,
@@ -614,8 +718,8 @@ export async function inviteOrganizationMember(
       actorRole: actor.role,
       action: 'MEMBER_INVITED',
       entityType: 'MEMBER',
-      entityId: pseudoUid,
-      summary: `Invited ${inviteEmail} as ${role} in ${department}`,
+      entityId: cleanEmail,
+      summary: `Issued authorized procurement invitation for ${cleanEmail} as ${role} in ${department}`,
     });
   } catch (err) {
     throw handleFirestoreError(err, { action: 'create', entityType: 'OrganizationMember', orgId });

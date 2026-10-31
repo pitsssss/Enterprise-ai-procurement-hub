@@ -192,7 +192,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-[#1B6A4A] dark:text-[#38B482]" />
-                {isArabic ? 'جاهز للتكامل مع SAP و Workday' : 'SAP S/4HANA & Workday Ready'}
+                {isArabic ? 'بوابات محاكاة لأنظمة SAP و Workday' : 'Simulated SAP & Workday Gateways'}
               </span>
             </div>
           </div>

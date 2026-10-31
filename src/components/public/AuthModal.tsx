@@ -9,6 +9,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 
+import { LanguageSwitcher } from '../LanguageSwitcher';
+
 export type AuthMode = 'signin' | 'register' | 'recovery' | 'invite';
 
 interface AuthModalProps {
@@ -113,6 +115,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         className="w-full max-w-md rounded-2xl bg-white dark:bg-[#11211E] border border-[#DDE3E1] dark:border-[#24423D] p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-150 relative"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="absolute top-4.5 left-4.5 rtl:left-auto rtl:right-4.5 z-10">
+          <LanguageSwitcher variant="compact" />
+        </div>
+
         <button
           onClick={onClose}
           className="absolute top-5 right-5 rtl:right-auto rtl:left-5 text-[#647A7B] dark:text-[#8BA39F] hover:text-[#17272A] dark:hover:text-[#EBF1F0] p-1 rounded-md"

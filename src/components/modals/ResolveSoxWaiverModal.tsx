@@ -112,7 +112,9 @@ export const ResolveSoxWaiverModal: React.FC<ResolveSoxWaiverModalProps> = ({
                 : `Your current role is ${userRole}. Form CS-8 Sole-Source waivers can only be authorized by FINANCE or ADMIN signatories.`}
             </p>
             <p className="mt-2 text-[10px] text-gray-500">
-              {isArabic ? 'تلميح: يمكنك محاكاة تغيير دورك في شاشة ملف المفوض لاختبار هذا المسار.' : 'Tip: You can switch roles in the Signatory Profile view to test and audit this authorization workflow.'}
+              {isArabic
+                ? 'تلميح: يمكنك تفعيل وضع معاينة الأدوار في شاشة ملف المفوض لاختبار تدفقات الواجهة.'
+                : 'Tip: You can enable UI Role Preview Mode in the Signatory Profile view to inspect role-specific UI workflows.'}
             </p>
           </div>
         ) : (
